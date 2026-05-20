@@ -10,6 +10,23 @@
 [delta]
   navigate = true
   light = false
+  line-numbers = true
+  side-by-side = false
+  syntax-theme = Nord
+  keep-plus-minus-markers = true
+  minus-style = "dim syntax"
+  minus-emph-style = "dim bold syntax"
+  plus-style = "syntax"
+  plus-emph-style = "bold syntax"
+  line-numbers-left-format = ""
+  line-numbers-right-format = "{np:>4}│ "
+  line-numbers-minus-style = "red"
+  line-numbers-plus-style = "green"
+  line-numbers-zero-style = "#4c566a"
+  line-numbers-right-style = "#4c566a"
+  file-style = bold blue
+  file-decoration-style  = none
+  hunk-header-style = omit
 [color]
   ui = true
 [branch]
