@@ -162,7 +162,6 @@ vim.pack.add({
   gh('tpope/vim-dadbod'),
   gh('tpope/vim-eunuch'),
   gh('tpope/vim-rails'),
-  gh('tpope/vim-commentary'),
   gh('jamessan/vim-gnupg'),
   gh('brenoprata10/nvim-highlight-colors'),
 
