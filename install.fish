@@ -66,6 +66,19 @@ function symlink_configs
   echo
 end
 
+function symlink_bin
+  set -l bin_path $dotfile_dir/bin
+
+  mkdir -p ~/.local/bin
+  echo "Bin scripts:"
+  for script_path in $bin_path/*
+    set -l script (basename $script_path)
+    echo -n "  Linking $script: "
+    symlink_one $script_path ~/.local/bin/$script
+  end
+  echo
+end
+
 function symlink_others
   set -l optional_path $dotfile_dir/optional
 
@@ -98,6 +111,7 @@ check_dotfiles
 and check_programs
 or continue_anyway
 and symlink_configs
+and symlink_bin
 and symlink_others
 and install_base16
 
