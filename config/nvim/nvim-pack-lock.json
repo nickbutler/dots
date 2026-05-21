@@ -129,7 +129,7 @@
       "src": "https://github.com/hashivim/vim-terraform"
     },
     "vim-tig": {
-      "rev": "dcf1e73c8e2cfee38f4e676ec0afbcf84c8d016d",
+      "rev": "052d18979562ecbe9ff0e3aee97ea3759ceb04e8",
       "src": "https://github.com/nickbutler/vim-tig"
     },
     "vim-tmux-navigator": {
