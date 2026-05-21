@@ -10,7 +10,7 @@ require('lualine').setup({
     lualine_b = { 'branch', { 'diff', symbols = { added = ' ', modified = ' ', removed = ' ' } }, 'diagnostics' },
     lualine_c = {
       { function()
-          local dir = vim.fn.expand('%:.:h')
+          local dir = vim.fn.expand('%:~:.:h')
           if dir == '' then return '' end
           return dir
         end },
