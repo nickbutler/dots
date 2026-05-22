@@ -173,8 +173,10 @@ function offer_install
     case brew
       brew install $packages
     case apt-get
-      apt-get update
-      apt-get install -y $packages
+      set -l maybe_sudo
+      test (id -u) -ne 0; and set maybe_sudo sudo
+      $maybe_sudo apt-get update
+      $maybe_sudo apt-get install -y $packages
   end
   echo
 end
