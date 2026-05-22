@@ -52,8 +52,8 @@ function symlink_configs
   echo "Configs:"
   for program_path in $dotfile_dir/config/*
     set -l program (basename $program_path)
-    echo -n "  $program: "
     if type $program > /dev/null 2>&1
+      echo -n "  $program: "
       symlink_one $program_path ~/.config/$program
     else
       set -a missing_programs $program
@@ -115,8 +115,6 @@ else
 end
 
 symlink_configs
-symlink_bin
-symlink_others
 
 if test (count $missing_programs) -gt 0
   echo -s (set_color yellow) "Not installed:" (set_color normal)
@@ -125,5 +123,8 @@ if test (count $missing_programs) -gt 0
   end
   echo
 end
+
+symlink_bin
+symlink_others
 
 echo -s (set_color green) "Done." (set_color normal)
