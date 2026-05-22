@@ -76,16 +76,23 @@ function symlink_bin
 end
 
 function symlink_others
+  set -l state_file $dotfile_dir/.dots_skipped
+  set -l skipped
+  test -f $state_file; and set skipped (cat $state_file)
+
   set -l any 0
   for program_path in $dotfile_dir/optional/*/
     set -l program (basename $program_path)
     test -L ~/.config/$program; and continue
+    contains -- $program $skipped; and continue
     set any 1
     read -n1 -P "  Link $program? [y/N] " choice < /dev/tty
     echo
     if string match -qi y $choice
       echo -n "  Linking $program: "
       symlink_one $program_path ~/.config/$program
+    else
+      echo $program >> $state_file
     end
   end
   test $any -eq 1; and echo

@@ -1,3 +1,4 @@
+.dots_skipped
 config/**/*local*
 config/nvim/pack/dev
 config/fish/fish_history
