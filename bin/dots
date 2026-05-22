@@ -75,13 +75,6 @@ function symlink_others
   test $any -eq 1; and echo
 end
 
-function install_base16
-  set BASE16_SHELL "$HOME/.config/base16-shell/"
-  if not test -d $BASE16_SHELL
-    git clone https://github.com/chriskempson/base16-shell.git $BASE16_SHELL
-  end
-end
-
 # Hard requirements
 if not type tmux > /dev/null 2>&1
   echo -s (set_color red) "tmux is required but not installed. Aborting." (set_color normal)
@@ -116,7 +109,6 @@ end
 symlink_configs
 symlink_bin
 symlink_others
-install_base16
 
 if test (count $missing_programs) -gt 0
   echo -s (set_color yellow) "Not installed: " (string join ", " $missing_programs) (set_color normal)
