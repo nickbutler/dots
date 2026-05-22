@@ -10,6 +10,33 @@ Configuration for [fish][1], [tmux][2], [Neovim][3], [Ghostty][4], and more.
 
 ---
 
+## Setup
+
+**New machine:**
+
+```sh
+git clone https://github.com/nickbutler/dotfiles.git ~/.config/dotfiles
+~/.config/dotfiles/bin/dots
+```
+
+Checks for required programs, symlinks configs and bin scripts, and prompts for optional extras. After that `dots` is on your `$PATH`.
+
+**Updates** — run `dots` at any time to check for new commits and apply them:
+
+```
+$ dots
+3 new commits on master:
+  abc1234 Fish: Add new abbreviation
+  def5678 Nvim: Update LSP config
+  ghi9012 Tmux: Tweak status line
+
+Pull updates? [y/N]
+```
+
+Pulling re-runs the link steps automatically so any new configs or scripts are wired up.
+
+---
+
 ## Fish
 
 **Auto-start tmux** — interactive shells outside tmux attach to (or create) a `main` session automatically. SSH sessions skip this.
@@ -41,7 +68,7 @@ Configuration for [fish][1], [tmux][2], [Neovim][3], [Ghostty][4], and more.
 | `mkcd` | `mkdir -p` + `cd` |
 | `pssh <proxy> <opts>` | SSH via a proxy host |
 | `ai` | Quick Claude Haiku query from the shell |
-| `dotfile-update` | Pull latest dotfiles from remote |
+| `dots` | Check for dotfile updates, show commits, prompt to pull and re-link |
 | `reload` | Restart fish shell (`exec fish`) |
 
 ---
