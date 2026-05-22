@@ -53,7 +53,7 @@ function symlink_configs
   for program_path in $dotfile_dir/config/*
     set -l program (basename $program_path)
     echo -n "  $program: "
-    if contains -- $program tmux; or type $program > /dev/null 2>&1
+    if type $program > /dev/null 2>&1
       symlink_one $program_path ~/.config/$program
     else
       set -a missing_programs $program
@@ -87,12 +87,6 @@ function symlink_others
     end
   end
   test $any -eq 1; and echo
-end
-
-# Hard requirements
-if not type tmux > /dev/null 2>&1
-  echo -s (set_color red) "tmux is required but not installed. Aborting." (set_color normal)
-  exit 1
 end
 
 # Check for updates
