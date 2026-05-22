@@ -18,6 +18,7 @@ function check_programs
   set -l warning 0
   echo "Programs:"
   for program in (ls $dotfile_dir/config)
+    contains -- $program tmux; and continue
     echo -n "  $program: "
     if type $program > /dev/null 2>&1
       ok
@@ -90,6 +91,12 @@ function install_base16
   if not test -d $BASE16_SHELL
     git clone https://github.com/chriskempson/base16-shell.git $BASE16_SHELL
   end
+end
+
+# Hard requirements
+if not type tmux > /dev/null 2>&1
+  echo -s (set_color red) "tmux is required but not installed. Aborting." (set_color normal)
+  exit 1
 end
 
 # Check for updates
