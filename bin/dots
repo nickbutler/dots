@@ -40,8 +40,9 @@ function symlink_one
   end
 
   if test -e $dest; or test -L $dest
-    echo -n -s (set_color yellow) "Backing up. "
-    mv $dest $dest.(date +%s).dots_backup
+    set -l backup_path $dest.(date +%s).dots_backup
+    echo -n -s (set_color yellow) "Backing up: $backup_path. "
+    mv $dest $backup_path
   end
 
   ln -sf $source $dest
