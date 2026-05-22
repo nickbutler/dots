@@ -11,5 +11,5 @@ function ai
          --effort low \
          --system-prompt $sysprompt \
          --print "$argv" \
-  | glow
+  | if type -q glow; glow; else; cat; end
 end
