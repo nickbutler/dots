@@ -1,12 +1,7 @@
-Nick Butler's Dotfiles
-======================
+dots
+====
 
-Configuration for [fish][1], [tmux][2], [Neovim][3], [Ghostty][4], and more.
-
-[1]: https://fishshell.com
-[2]: https://github.com/tmux/tmux
-[3]: https://neovim.io/
-[4]: https://ghostty.org
+Nick's dotfiles — configuration for [fish][1], [tmux][2], [Neovim][3], [Ghostty][4], and more.
 
 ---
 
@@ -15,17 +10,20 @@ Configuration for [fish][1], [tmux][2], [Neovim][3], [Ghostty][4], and more.
 **New machine:**
 
 ```sh
-git clone https://github.com/nickbutler/dotfiles.git ~/.config/dotfiles
+# Clone somewhere sensible
+git clone https://github.com/nickbutler/dots.git ~/.config/dotfiles
+
+# Run the installer
 ~/.config/dotfiles/bin/dots
 ```
 
-Checks for required programs, symlinks configs and bin scripts, and prompts for optional extras. After that `dots` is on your `$PATH`.
+Checks for required programs, offers to install missing ones, symlinks configs and bin scripts, and prompts for optional extras. After that `dots` is on your `$PATH`.
 
 **Updates** — run `dots` at any time to check for new commits and apply them:
 
 ```
 $ dots
-3 new commits on master:
+3 new commits on main:
   abc1234 Fish: Add new abbreviation
   def5678 Nvim: Update LSP config
   ghi9012 Tmux: Tweak status line
@@ -49,33 +47,37 @@ Pulling re-runs the link steps automatically so any new configs or scripts are w
 |-----|--------|
 | `Ctrl+T` | fzf file picker |
 | `Ctrl+R` | fzf history search |
-| `Ctrl+C` / `Tab` | fzf directory jump (uses `z` frecency) |
+| `Tab` | fzf directory jump (uses `z` frecency) |
 | `Alt+K` / `Alt+J` | history token search backward/forward |
 | `Ctrl+X Ctrl+E` | edit current command in `$EDITOR` |
 
-**Abbreviations** — common shortcuts including `v`/`nvim`, `g`/`git`, `s`/`git status`, `gl` (graph log), `r`/`ranger`, `t`/`tig --all`, `pw` (generate password).
+**Abbreviations** — common shortcuts including:
+- `v`/`nvim`
+- `g`/`git`
+- `s`/`git status`
+- `r`/`ranger`
+- `t`/`tig --all`
+- `.`/`cd -`
+- `..`/`cd ..`
+- `...`/`cd ../..` (and so on up to `.......`)
 
 **Notable functions:**
 
 | Function | Description |
 |----------|-------------|
-| `n [init]` | Per-project notes file (`.notes.md`), walks up to find it; `init` creates one |
 | `mux <cmd> <var1,var2,...>` | Run a command against multiple args in a tiled tmux layout with panes synced |
-| `tmuxnew` | fzf-style tmux window picker based on `z` history |
-| `tmuxpasskey` | Toggle key pass-through to vim/fzf vs tmux (used for shared `C-j/k/l` bindings) |
 | `biome` | Per-directory environment loader — sources a `.biome` file on `cd`, restores on exit; masks secrets in `list` output |
 | `z` | Frecency-based directory jumping |
 | `mkcd` | `mkdir -p` + `cd` |
 | `pssh <proxy> <opts>` | SSH via a proxy host |
 | `ai` | Quick Claude Haiku query from the shell |
-| `dots` | Check for dotfile updates, show commits, prompt to pull and re-link |
 | `reload` | Restart fish shell (`exec fish`) |
 
 ---
 
 ## Tmux
-
-**Theme:** Nordfox, with active pane background lighter than inactive panes.
+| `tmuxnew` | fzf-style tmux window picker based on `z` history |
+| `tmuxpasskey` | Toggle key pass-through to vim/fzf vs tmux (used for shared `C-j/k/l` bindings) |
 
 **Prefix:** `C-Space`
 
@@ -85,9 +87,9 @@ Pulling re-runs the link steps automatically so any new configs or scripts are w
 |-----|--------|
 | `C-j / C-k / C-l` | Move between panes (or Neovim splits) |
 | `C-z` | Zoom/unzoom current pane |
-| `h/j/k/l` (with prefix) | Resize pane (small) |
-| `H/J/K/L` (with prefix) | Resize pane (large) |
-| `F1–F5` | Select pane 1–5 |
+| `h/j/k/l` (with prefix) | Resize pane (large, can be repeated without prefix) |
+| `H/J/K/L` (with prefix) | Resize pane (small, can be repeated without prefix) |
+| `C-1 – C-5` | Select pane 1–5 |
 
 **Window management:**
 
@@ -195,3 +197,8 @@ Pulling re-runs the link steps automatically so any new configs or scripts are w
 | vim-dadbod | Database client |
 | auto-pairs | Bracket completion |
 | vim-tmux-navigator | Shared pane navigation |
+
+[1]: https://fishshell.com
+[2]: https://github.com/tmux/tmux
+[3]: https://neovim.io/
+[4]: https://ghostty.org

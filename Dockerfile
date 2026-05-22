@@ -7,4 +7,4 @@ RUN apt-get update -qq && \
       git \
     && rm -rf /var/lib/apt/lists/*
 
-CMD ["fish", "-c", "git clone -b feature/bin/dots https://github.com/nickbutler/dotfiles.git ~/.config/dotfiles && fish ~/.config/dotfiles/bin/dots; exec fish"]
+CMD ["fish", "-c", "git clone https://github.com/nickbutler/dots.git ~/.config/dotfiles && fish ~/.config/dotfiles/bin/dots; exec fish"]

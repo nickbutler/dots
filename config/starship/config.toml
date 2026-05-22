@@ -26,6 +26,7 @@ style = "cyan"
 
 [docker_context]
 symbol = " "
+format = " [$symbol($version )]($style)"
 
 [elixir]
 symbol = " "

@@ -4,7 +4,7 @@ set dotfile_dir ~/.config/dotfiles
 
 if not test -d $dotfile_dir
   echo "Dotfiles not found at $dotfile_dir."
-  echo "Clone the repo first: git clone https://github.com/nickbutler/dotfiles.git $dotfile_dir"
+  echo "Clone the repo first: git clone https://github.com/nickbutler/dots.git $dotfile_dir"
   exit 1
 end
 
@@ -183,11 +183,11 @@ end
 
 # Check for updates
 echo "Checking for updates..."
-git fetch --quiet origin master
+git fetch --quiet origin main
 set count (git rev-list HEAD..origin/master --count)
 
 if test $count -gt 0
-  echo -s (set_color cyan) "$count new commit"(test $count -ne 1; and echo s)(set_color normal) " on master:"
+  echo -s (set_color cyan) "$count new commit"(test $count -ne 1; and echo s)(set_color normal) " on main:"
   echo
   git log HEAD..origin/master --oneline --no-decorate | while read -l line
     echo "  $line"
@@ -196,7 +196,7 @@ if test $count -gt 0
   read -n1 -P "Pull updates? [y/N] " choice < /dev/tty
   echo
   if string match -qi y $choice
-    git pull origin master
+    git pull origin main
     echo
   else
     echo "Skipped."

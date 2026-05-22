@@ -23,4 +23,3 @@ abbr sql lazysql
 abbr t tig --all
 abbr tailf tail -f
 abbr v nvim
-abbr vv v
