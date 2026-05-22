@@ -136,4 +136,15 @@ end
 symlink_bin
 symlink_others
 
+if not contains -- ~/.local/bin $PATH
+  echo -s (set_color yellow) "~/.local/bin is not on your PATH." (set_color normal)
+  read -n1 -P "Add it now with fish_add_path? [y/N] " choice < /dev/tty
+  echo
+  if string match -qi y $choice
+    fish_add_path ~/.local/bin
+    echo "Added. Restart your shell or run 'exec fish' to pick it up."
+    echo
+  end
+end
+
 echo -s (set_color green) "Done." (set_color normal)
