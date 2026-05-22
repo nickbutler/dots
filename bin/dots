@@ -25,6 +25,7 @@ function program_description
     case nvim;           echo "Neovim text editor"
     case ranger;         echo "terminal file manager"
     case starship;       echo "minimalist shell prompt"
+    case tmux;           echo "terminal multiplexer"
     case '*';            echo ""
   end
 end
