@@ -124,10 +124,13 @@ Pulling re-runs the link steps automatically so any new configs or scripts are w
 
 **Leader:** `Space`
 
+**Command line mode:** `;` - swaps with `:` to reduce key presses
+
 ### Navigation
 
 | Key | Action |
 |-----|--------|
+| `<Leader><Leader>` | open ranger file picker |
 | `C-f` | fzf file picker |
 | `C-s` | fzf ripgrep search |
 | `C-b` | fzf buffer picker |
