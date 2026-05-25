@@ -1,0 +1,49 @@
+# Feature: <Name>
+
+## User story
+
+As a **<role>**, I want **<capability>**, so that **<benefit>**.
+
+## Context
+
+<2-4 sentences: where this fits in the user journey, any preconditions worth knowing, the typical user motivation. This is for orientation, not behaviour spec.>
+
+## Acceptance criteria
+
+```gherkin
+Feature: <Name>
+
+  Background:
+    Given <shared setup that applies to all scenarios>
+
+  Scenario: <happy path scenario name>
+    Given <starting state>
+    When <user action>
+    Then <expected outcome>
+
+  Scenario: <secondary scenario>
+    Given <state>
+    When <action>
+    Then <outcome>
+
+  Scenario Outline: <parameterised scenarios, if applicable>
+    Given <state with <param>>
+    When <action>
+    Then <outcome with <param>>
+
+    Examples:
+      | param |
+      | a     |
+      | b     |
+```
+
+## Technical notes
+
+- **Implementation locations**: `<path/to/handler>`, `<path/to/service>`, `<path/to/view>`
+- **Key types/contracts**: `<TypeName>`, `<EndpointPath>`, `<EventName>`
+- **Dependencies**: <Other features, services, or modules this depends on>
+- **Non-obvious behaviour**: <Anything a developer would otherwise discover by reading the code — invariants, ordering constraints, side effects, gotchas>
+
+## Notes on confirmation
+
+<Optional. If the scenarios above involve any subtle inference (e.g. one scenario is exercised by tests, another only by code inspection), note it here for reviewers. Items requiring deeper investigation go to GAPS.md, not here.>

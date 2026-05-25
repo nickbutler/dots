@@ -1,0 +1,30 @@
+# Gaps
+
+Behaviour referenced or implied during spec authoring that could not be confirmed from the code, existing documentation, or tests. Each entry is a question for stakeholders, not a defect.
+
+A thorough gap log is more valuable than a confident but partially-fictional spec — these are deliverables in their own right.
+
+## How to read this file
+
+Gaps are organised by epic and then by feature or area. Each entry has:
+- **Question**: what needs to be known
+- **Why it matters**: which scenario or detail depends on it
+- **Where you looked**: files, docs, tests checked
+- **Best guess (if any)**: optional, clearly labelled as speculation
+
+---
+
+## <Epic name>
+
+### <Feature name or area>
+
+- **Question**: <The specific thing you couldn't determine.>
+- **Why it matters**: <Which scenario, decision, or behaviour blocks on this. Reference specific feature files if applicable.>
+- **Where you looked**: `<path/to/file>`, `<path/to/doc>`
+- **Best guess**: <Optional speculation, clearly labelled. Omit if you have no informed guess.>
+
+### <Another feature or area>
+
+- **Question**: <...>
+- **Why it matters**: <...>
+- **Where you looked**: <...>

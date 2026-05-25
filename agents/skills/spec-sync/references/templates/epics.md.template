@@ -1,0 +1,24 @@
+# Epics
+
+Top-level index of all epics in this spec set. Each epic is a bounded area of behaviour with its own folder containing `EPIC.md` and per-feature files under `features/`.
+
+## Active epics
+
+- [<Epic name>](<epic-slug>/EPIC.md) — <one-paragraph summary of what this epic delivers>
+
+## Candidate epics (not yet specified)
+
+These have been identified during reconnaissance but not yet documented. They are listed here as a roadmap and to make scope visible.
+
+- **<Epic name>** — <one-line description, including the code area it lives in>
+- **<Epic name>** — <one-line description>
+
+## How this set is organised
+
+Each epic folder contains:
+- `EPIC.md` — summary, scope, key concepts, and links to features
+- `features/<feature-slug>.md` — one file per user-facing feature, with user story, Gherkin acceptance criteria, and technical notes
+
+Cross-cutting artefacts at the root:
+- `GAPS.md` — behaviour referenced in specs but not confirmable from code/docs
+- `STEP_DEFINITIONS_PROPOSED.md` — new Gherkin step definitions proposed by spec authoring
