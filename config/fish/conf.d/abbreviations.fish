@@ -16,10 +16,11 @@ abbr prb git prb
 abbr pull git pull
 abbr push git push
 abbr pw pwgen -Bys 24 1
-abbr r ranger
+abbr r yazi
 abbr rmd rm -rf
 abbr s git status -bsu
 abbr sql lazysql
 abbr t tig --all
 abbr tailf tail -f
 abbr v nvim
+abbr y yazi
