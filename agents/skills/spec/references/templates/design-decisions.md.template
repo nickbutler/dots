@@ -1,0 +1,32 @@
+# Design decisions
+
+Explicit choices made during the design discussion, and questions still open. Both are first-class outputs of this spec: decided choices anchor the implementation; open questions mark where the implementer must seek clarification before proceeding.
+
+**Do not overwrite decided entries** — add a new entry (with date) if a decision changes, so the rationale history is preserved.
+
+---
+
+## Decided
+
+Choices made explicitly during the design discussion.
+
+### <Decision title>
+
+- **Decision**: <What was decided, stated as a concrete constraint or commitment>
+- **Rationale**: <Why — the constraint, trade-off, or preference that drove it>
+- **Implications**: <What this rules out, enables, or affects>
+- **Affects**: <Feature or epic names this decision constrains>
+
+---
+
+## Open
+
+Questions not resolved during the design discussion. Each must be answered before implementation of the relevant feature begins.
+
+### <Question title>
+
+- **Question**: <The specific thing that needs to be decided>
+- **Why it matters**: <Which feature, scenario, or system property is affected>
+- **Options identified**: <Options discussed, if any — or "not yet discussed">
+- **Owner**: <Who should answer this, if known>
+- **Blocks**: <Feature slug(s) that cannot be finalised until this is resolved>
