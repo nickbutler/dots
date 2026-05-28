@@ -56,12 +56,68 @@ Use `kebab-case` slugs derived from names, not numbers.
 
 Read `step_definitions/` thoroughly before writing Gherkin. Use existing steps verbatim where possible. Write idiomatic, readable scenarios — don't contort phrasing to fit the library at the cost of clarity.
 
-When a scenario requires a step that doesn't exist:
-1. Write the natural Gherkin phrase in the scenario
-2. Add an entry to `STEP_DEFINITIONS_PROPOSED.md` using the template
-3. Note whether the step is reusable or feature-specific
+When a scenario requires a step that doesn't exist, write the natural Gherkin phrase in the scenario and add an entry to `STEP_DEFINITIONS_PROPOSED.md` using the template.
 
-If no `step_definitions/` exists yet (common in create mode), write idiomatic Gherkin freely.
+### Two-layer step model
+
+Steps live at one of two levels. Keep them separate — do not mix levels within a scenario.
+
+**Layer 1 — Interactions**: single browser actions from the primitive vocabulary below. Used in feature files that document a task directly.
+
+**Layer 2 — Tasks**: named compositions of interactions representing a meaningful user action. Task steps appear as `Given` preconditions in higher-level feature files. Their implementations call interaction-layer steps.
+
+```gherkin
+# Layer 1 feature — documents "add to cart" in primitives
+Scenario: Add a product to the cart
+  Given I navigate to /products/widget
+  When I click the Add to Cart button
+  Then I should see "1 item in cart"
+
+# Layer 2 feature — references "add to cart" as a precondition
+Scenario: Complete a purchase
+  Given I have added "Widget" to my cart
+  When I click the Checkout button
+  Then I should be on /order-confirmation
+```
+
+**Background vs. task step — decision rule:**
+- Same interaction sequence appears as a precondition in **2+ scenarios across different feature files** → define a task step
+- Sequence only repeats within one feature file → use `Background:`
+- Never create a task step solely to avoid writing primitives once — only to eliminate duplication across features
+
+**Task step naming:**
+- Use state/past-tense language: `I have {done X}`, `a {thing} exists`, `{X} has been set up`
+- Interaction steps use present-action language: `I click`, `I fill in`, `I navigate`
+- The tense difference makes the layer immediately visible when reading a scenario
+
+**Proposing new steps:**
+- Interaction steps must come from the primitive vocabulary — no exceptions
+- Task steps only when the cross-feature duplication condition above is met; note which feature files they consolidate
+- Do not propose a task step that wraps a single interaction — that is just renaming a primitive
+
+### Primitive browser vocabulary (Layer 1)
+
+Parameters use `{curly_braces}`. All locators use visible text or label — never CSS selectors, XPath, or element IDs.
+
+| Step | Category | Notes |
+|---|---|---|
+| `I navigate to {url}` | Navigation | Absolute or root-relative URL |
+| `I click the {text} link` | Interaction | Matches visible link text |
+| `I click the {text} button` | Interaction | Matches button label |
+| `I click {text}` | Interaction | Any clickable element; use typed variants above when unambiguous |
+| `I fill in {field} with {value}` | Input | `{field}` is the input label or placeholder |
+| `I select {option} from {field}` | Input | For `<select>` elements |
+| `I check {field}` | Input | Checkbox by label |
+| `I uncheck {field}` | Input | Checkbox by label |
+| `I submit the form` | Input | Submits the active form |
+| `I should see {text}` | Assertion | Visible text anywhere on the page |
+| `I should not see {text}` | Assertion | |
+| `I should be on {path}` | Assertion | URL path match |
+| `the {field} field should contain {value}` | Assertion | |
+| `the {field} field should be empty` | Assertion | |
+| `the {text} button should be disabled` | Assertion | |
+| `the {text} button should be enabled` | Assertion | |
+| `I should see an error {text}` | Assertion | For inline validation messages |
 
 ## Shared: templates
 
