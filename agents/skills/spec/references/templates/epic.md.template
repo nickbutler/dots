@@ -31,8 +31,10 @@
 
 ## Features
 
-- [<Feature name>](features/<feature-slug>.md) — <one-line description>
-- [<Feature name>](features/<feature-slug>.md) — <one-line description>
+| Feature | Status | Description |
+|---|---|---|
+| [<Feature name>](features/<feature-slug>.md) | draft | <one-line description> |
+| [<Feature name>](features/<feature-slug>.md) | draft | <one-line description> |
 
 ## Dependencies and integration points
 

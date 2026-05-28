@@ -4,9 +4,17 @@
 
 Each epic below is a bounded area of behaviour. Active epics have been specified; candidate epics have been identified but not yet documented.
 
+## Progress
+
+| Epic | Passing | Total |
+|---|---|---|
+| [<Epic name>](<epic-slug>/EPIC.md) | 0 | 0 |
+
 ## Active epics
 
-- [<Epic name>](<epic-slug>/EPIC.md) — <one-sentence description of what this epic delivers to a user. Non-technical: no class names, file paths, or module references.>
+| Epic | Description |
+|---|---|
+| [<Epic name>](<epic-slug>/EPIC.md) | <one-sentence description of what this epic delivers to a user. Non-technical: no class names, file paths, or module references.> |
 
 ## Candidate epics (not yet specified)
 

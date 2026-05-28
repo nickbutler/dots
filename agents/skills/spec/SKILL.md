@@ -119,6 +119,29 @@ Parameters use `{curly_braces}`. All locators use visible text or label — neve
 | `the {text} button should be enabled` | Assertion | |
 | `I should see an error {text}` | Assertion | For inline validation messages |
 
+## Shared: progress tracking
+
+Each feature file carries a `**Status**:` line below its title. Statuses flow in one direction — do not move backwards without a note explaining why.
+
+| Status | Meaning |
+|---|---|
+| `draft` | Spec written; needs review before implementation begins |
+| `ready` | Spec approved; awaiting implementation |
+| `in progress` | Implementation underway; scenarios not yet passing |
+| `passing` | All acceptance scenarios green |
+| `failing` | Scenarios were passing; now failing (regression) |
+| `deferred` | Intentionally postponed; not counted in epic progress |
+
+**EPIC.md** maintains a features table with a Status column — the single place to see all features in an epic at a glance.
+
+**EPICS.md** maintains a Progress table showing `Passing / Total` per epic — `deferred` features excluded from both counts.
+
+**Updating statuses:**
+- `create` and `infer` modes: all new features start at `draft`
+- `update` mode: when code evidence confirms a feature is implemented and tests are present, propose advancing to `in progress` or `passing`; when referenced code disappears, flag as `failing` and prompt the user
+- Status changes outside `update` mode are manual — the user edits the feature file and the EPIC.md table directly
+- After any status change, recalculate the EPICS.md Progress table
+
 ## Shared: templates
 
 All templates are in `references/templates/`. Read each one just-in-time — only when you're about to generate that file. Do not load all templates upfront.
