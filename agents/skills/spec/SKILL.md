@@ -44,7 +44,7 @@ Use `kebab-case` slugs derived from names, not numbers.
 
 ## Shared: core disciplines
 
-**Pilot first, scale second.** Always start with one representative epic end-to-end before generating the rest. The pilot establishes format; subsequent epics follow it. Override only with explicit instruction.
+**Epics before features.** Draft and confirm the complete epic list before generating any feature files. Once confirmed, work through epics one at a time — establish format with the first feature of the first epic, then proceed.
 
 **Stop at checkpoints.** Each mode has natural decision points. Stop at each and confirm before proceeding. Compounding a wrong assumption across many files is expensive; a one-sentence confirmation is cheap.
 
@@ -128,19 +128,19 @@ Flag any category with insufficient signal — those become initial Open entries
 
 #### 2. Epic identification
 
-Present 3–6 candidate epics with one-line user-facing descriptions. Recommend a pilot epic (bounded, representative, medium complexity). Note which epics are MVP vs. later phase.
+Draft the full set of epics — typically 3–6 — each with a one-line user-facing description and an MVP / later-phase label. This is the complete map of the system, not a shortlist for picking a starting point.
 
-**Stop. Confirm epic list and pilot choice.**
+**Stop. Confirm the epic list in full before scaffolding or writing any features.** Once confirmed, ask which epic to start with, or default to the most foundational MVP epic.
 
 #### 3. Scaffold
 
-Create directory structure and stub files: `EPICS.md`, `DESIGN_DECISIONS.md` (populate with decisions and open questions surfaced so far), `GAPS.md` (empty structure), `STEP_DEFINITIONS_PROPOSED.md` (empty), `<pilot-epic-slug>/EPIC.md` (stub), `<pilot-epic-slug>/features/` (empty).
+Create directory structure and stub files for all confirmed epics: `EPICS.md`, `DESIGN_DECISIONS.md` (populate with decisions and open questions surfaced so far), `GAPS.md` (empty structure), `STEP_DEFINITIONS_PROPOSED.md` (empty), and for each epic: `<epic-slug>/EPIC.md` (stub), `<epic-slug>/features/` (empty).
 
 **Stop. Confirm structure before populating.**
 
 #### 4. Feature enumeration
 
-List features within the pilot epic, one line each. Each must state the user capability, the actor, and whether it's MVP or later.
+List features within the starting epic, one line each. Each must state the user capability, the actor, and whether it's MVP or later.
 
 **Stop. Confirm feature list.**
 
@@ -154,7 +154,9 @@ Generate one feature file in full, with these adaptations:
 
 #### 6. Remaining features → Finalise → Report
 
-Generate remaining pilot features. Complete `EPIC.md` and `EPICS.md`. Populate `DESIGN_DECISIONS.md` with all choices and open questions from the session. Report: file tree, domain vocabulary established, count of open decisions, count of spec gaps, recommended next step.
+Generate remaining features for the current epic. Complete `EPIC.md`. Populate `DESIGN_DECISIONS.md` with all choices and open questions from the session. Report: file tree, domain vocabulary established, count of open decisions, count of spec gaps, recommended next step.
+
+Do not proceed to the next epic without explicit instruction.
 
 ---
 
@@ -207,21 +209,19 @@ If both `PLAN.md` and `ARCHITECTURE.md` are missing, ask before proceeding.
 
 Read input documents. Build a map of the codebase (directory listing, outline-mode reading — don't load full files speculatively). Identify major user-facing capabilities, layering, and the existing step vocabulary.
 
-Report: what you found, 2–3 candidate pilot epics with one-line descriptions, recommended choice with reasoning.
+Report: what you found, then the full set of epics identified — each with a one-line user-facing description. Include all major user-facing capabilities, not a shortlist.
 
-Pilot selection criteria: bounded and self-contained, representative of broader patterns, medium complexity.
-
-**Stop. Wait for the user to confirm the pilot epic.**
+**Stop. Wait for the user to confirm the complete epic list.** Once confirmed, ask which epic to start with, or default to the most bounded and self-contained MVP epic.
 
 #### 2. Scaffold
 
-Create directory structure and stub files: `EPICS.md`, `GAPS.md`, `STEP_DEFINITIONS_PROPOSED.md`, `<pilot-epic-slug>/EPIC.md` (stub), `<pilot-epic-slug>/features/` (empty). `EPICS.md` begins with a plain-English product description (1–2 sentences, no class names or file paths).
+Create directory structure and stub files for all confirmed epics: `EPICS.md` (begins with a plain-English product description, 1–2 sentences, no class names or file paths), `GAPS.md`, `STEP_DEFINITIONS_PROPOSED.md`, and for each epic: `<epic-slug>/EPIC.md` (stub), `<epic-slug>/features/` (empty).
 
 **Stop. Confirm structure before populating.**
 
 #### 3. Feature enumeration
 
-List features within the pilot epic, one line each. Each must reference at least one file path where the feature is implemented.
+List features within the starting epic, one line each. Each must reference at least one file path where the feature is implemented.
 
 **Stop. Confirm feature list.**
 
@@ -233,9 +233,9 @@ Generate one feature file in full. Apply the confirmed-only rule strictly. Add u
 
 #### 5. Remaining features → Finalise → Report
 
-Generate remaining pilot features. Complete `EPIC.md` and `EPICS.md`. Review `GAPS.md` and `STEP_DEFINITIONS_PROPOSED.md`. Report: file tree, what's covered and what's in GAPS, number of proposed step definitions, patterns or inconsistencies noticed (flag, do not fix).
+Generate remaining features for the current epic. Complete `EPIC.md`. Update `EPICS.md` to reflect progress. Review `GAPS.md` and `STEP_DEFINITIONS_PROPOSED.md`. Report: file tree, what's covered and what's in GAPS, number of proposed step definitions, patterns or inconsistencies noticed (flag, do not fix).
 
-Do not proceed beyond the pilot epic without explicit instruction.
+Do not proceed to the next epic without explicit instruction.
 
 ---
 
@@ -326,6 +326,6 @@ Bundle clarification questions when possible. Ask (don't guess) when:
 
 ## Override flags (all modes)
 
-- **"Generate all epics in one pass"** — skip pilot mode; still stop after the first feature for format review
+- **"Generate all epics in one pass"** — after confirming the epic list, generate all epics without stopping between them; still stop after the first feature of the first epic for format review
 - **"Include inferred behaviour, tag inline"** — (infer/update) switch to Confirmed/Inferred/Gap inline tagging instead of separate GAPS.md
 - **"Skip step definition verification"** — write idiomatic Gherkin without checking against the library; still record proposed steps
