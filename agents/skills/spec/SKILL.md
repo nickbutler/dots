@@ -189,9 +189,34 @@ Gaps here are spec-level ambiguities — the design discussion wasn't specific e
 
 ### Workflow
 
+#### 0. Cold-start interview (skip if context already exists)
+
+If the skill is invoked with no prior conversation — empty chat, blank project directory, or a bare `/spec create` with no description — do not attempt to synthesise; there is nothing to synthesise yet. Instead, conduct a short structured interview.
+
+Ask questions **one at a time**, in this order. Use earlier answers to skip questions that are already answered. Stop as soon as all must-have questions are resolved — do not ask nice-to-have questions if the picture is already clear enough to draft.
+
+**Must-have (always ask if unanswered):**
+
+1. *"What does it do, and who is it for?"* — the one-sentence pitch
+2. *"Who are the different types of users?"* — distinct actors; may be implicit in the answer to 1
+3. *"What are the 3–5 core things users need to be able to do?"* — jobs to be done
+4. *"What's essential for the first version, and what can wait?"* — MVP boundary
+
+**Strongly useful (ask if still unclear after the above):**
+
+5. *"What is explicitly out of scope?"* — prevents the epic list from expanding unboundedly
+6. *"What platform or interface?"* — web app, mobile, CLI, API, or combination
+
+**Nice to have (ask only if relevant and not yet answered):**
+
+7. *"Are there existing systems this needs to integrate with or replace?"*
+8. *"Any hard constraints — compliance, performance, specific tech stack?"*
+
+Keep questions short and conversational. Do not present them as a numbered list to the user — ask naturally, one at a time, and acknowledge each answer before asking the next. Once the must-haves are covered, proceed to step 1.
+
 #### 1. Elicitation summary
 
-Synthesise from the conversation:
+Synthesise from the conversation (or interview answers from step 0):
 
 - **Product/feature**: what it does and for whom (one sentence)
 - **Actors**: who uses the system and in what roles
