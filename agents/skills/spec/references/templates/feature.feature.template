@@ -1,0 +1,28 @@
+Feature: <Name>
+
+  # Layer: <interaction | task>
+  # Epic: <epic-slug>
+  # Status: draft
+
+  Background:
+    Given <shared setup that applies to all scenarios>
+
+  Scenario: <happy path scenario name>
+    Given <starting state>
+    When <user action>
+    Then <expected outcome>
+
+  Scenario: <secondary scenario>
+    Given <state>
+    When <action>
+    Then <outcome>
+
+  Scenario Outline: <parameterised scenarios, if applicable>
+    Given <state with <param>>
+    When <action>
+    Then <outcome with <param>>
+
+    Examples:
+      | param |
+      | a     |
+      | b     |
