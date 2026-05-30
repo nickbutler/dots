@@ -12,7 +12,7 @@ New browser-primitive steps not yet in the library. Must match the primitive voc
 
 ### `<Step phrase as it appears in Gherkin>`
 
-- **Used in**: `<epic-slug>/features/<feature>.md`
+- **Used in**: `<epic-slug>/features/<feature>.feature`
 - **Vocabulary entry**: <Which row in the primitive vocabulary table this maps to>
 - **Suggested parameters**: <Any captures, e.g. quoted strings, numbers>
 - **Implementation sketch**: <What the browser automation should do>

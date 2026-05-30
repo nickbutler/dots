@@ -35,10 +35,14 @@ specs/
 └── <epic-slug>/
     ├── EPIC.md
     ├── features/
-    │   └── <feature-slug>.md
+    │   ├── <feature-slug>.md         # user story, context, technical notes, status
+    │   └── <feature-slug>.feature    # executable Gherkin (pytest-bdd / Cucumber)
     └── archived/                     # [update mode] deprecated features
-        └── <feature-slug>.md
+        ├── <feature-slug>.md
+        └── <feature-slug>.feature
 ```
+
+Each feature is a pair of files with the same slug. The `.md` carries the human-readable context; the `.feature` carries the executable Gherkin. They are always created and archived together.
 
 Use `kebab-case` slugs derived from names, not numbers.
 
@@ -150,7 +154,8 @@ All templates are in `references/templates/`. Read each one just-in-time — onl
 |---|---|
 | `epics.md.template` | all modes |
 | `epic.md.template` | all modes |
-| `feature.md.template` | all modes |
+| `feature.md.template` | all modes — human-readable context |
+| `feature.feature.template` | all modes — executable Gherkin |
 | `gaps.md.template` | all modes |
 | `step-definitions-proposed.md.template` | all modes |
 | `design-decisions.md.template` | create mode |

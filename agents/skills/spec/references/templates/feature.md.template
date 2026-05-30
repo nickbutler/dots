@@ -12,32 +12,7 @@ As a **<role>**, I want **<capability>**, so that **<benefit>**.
 
 ## Acceptance criteria
 
-```gherkin
-Feature: <Name>
-
-  Background:
-    Given <shared setup that applies to all scenarios>
-
-  Scenario: <happy path scenario name>
-    Given <starting state>
-    When <user action>
-    Then <expected outcome>
-
-  Scenario: <secondary scenario>
-    Given <state>
-    When <action>
-    Then <outcome>
-
-  Scenario Outline: <parameterised scenarios, if applicable>
-    Given <state with <param>>
-    When <action>
-    Then <outcome with <param>>
-
-    Examples:
-      | param |
-      | a     |
-      | b     |
-```
+See [`<feature-slug>.feature`](./<feature-slug>.feature) for the executable Gherkin scenarios.
 
 ## Technical notes
 
