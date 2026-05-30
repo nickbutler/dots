@@ -12,6 +12,7 @@ abbr g git
 abbr gdi git diff
 abbr gl git log --oneline --decorate --color --graph
 abbr mk mkdir -p
+abbr mkrepo gh repo create (basename $PWD) --private --source=. --remote=upstream --push
 abbr prb git prb
 abbr pull git pull
 abbr push git push
