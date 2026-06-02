@@ -184,12 +184,12 @@ end
 # Check for updates
 echo "Checking for updates..."
 git fetch --quiet origin main
-set count (git rev-list HEAD..origin/master --count)
+set count (git rev-list HEAD..origin/main --count)
 
 if test $count -gt 0
   echo -s (set_color cyan) "$count new commit"(test $count -ne 1; and echo s)(set_color normal) " on main:"
   echo
-  git log HEAD..origin/master --oneline --no-decorate | while read -l line
+  git log HEAD..origin/main --oneline --no-decorate | while read -l line
     echo "  $line"
   end
   echo
