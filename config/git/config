@@ -1,6 +1,6 @@
 [user]
   name = Nick Butler
-  email = nick@codeindulgence.com
+  email = nick@butler.email
 [core]
   excludesfile = ~/.config/git/ignore
   pager = delta
