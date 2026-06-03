@@ -84,3 +84,4 @@
 
 [include]
   path = ~/.config/git/config.local
+  path = .git/config.local
