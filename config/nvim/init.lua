@@ -100,6 +100,7 @@ map('i', '<C-C>',      '<Esc>')
 map('i', '<C-D>',      '<Del>')
 map('i', '<C-E>',      '<End>')
 map('i', '<C-F>',      '<Right>')
+map('i', '<Tab>',      '<C-x><C-u>')
 
 map('x', 'v',          '<C-V>')
 map('x', '<C-V>',      'v')
