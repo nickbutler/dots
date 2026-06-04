@@ -31,30 +31,29 @@ This report is informational. Actual changes have been applied directly to spec 
 
 ### Drift updates
 
-- **`<epic-slug>/features/<feature-slug>.md`**: <one-line summary of what changed and why>
-- **`<epic-slug>/features/<feature-slug>.md>`**: <...>
+- **`features/<feature-slug>.md`**: <one-line summary of what changed and why>
 
 ### Refactor-only updates
 
-- **`<epic-slug>/features/<feature-slug>.md`**: <e.g. "updated implementation path from X to Y after module move; scenarios unchanged">
+- **`features/<feature-slug>.md`**: <e.g. "updated implementation path from X to Y after module move; scenarios unchanged">
 
 ### Archived features
 
-- **`<epic-slug>/archived/<feature-slug>.md`** (was at `<epic-slug>/features/<feature-slug>.md`): <reason; last commit where feature existed>
+- **`archived/<feature-slug>.md`** (was at `features/<feature-slug>.md`): <reason; last commit where feature existed>
 
 ### Newly added features
 
-- **`<epic-slug>/features/<feature-slug>.md>`**: <one-line description; source files>
+- **`features/<feature-slug>.md`**: <one-line description; source files>
 
 ## Gap reconciliation
 
 ### Resolved
 
-- **<Epic name> / <Feature or area>**: <Original question, brief note on how it was resolved, where it now lives in specs.>
+- **<Feature or area>**: <Original question, brief note on how it was resolved, where it now lives in specs.>
 
 ### Newly added
 
-- **<Epic name> / <Feature or area>**: <Brief note on the new gap and why it matters.>
+- **<Feature or area>**: <Brief note on the new gap and why it matters.>
 
 ## Step definition reconciliation
 
@@ -71,14 +70,12 @@ This report is informational. Actual changes have been applied directly to spec 
 | Question | Resolution |
 |---|---|
 | <Specific question raised during sync> | <How the user resolved it> |
-| <...> | <...> |
 
 ## Patterns and observations
 
 <Things noticed during the sync that may be worth a separate discussion. Do not fix during sync. Examples:>
 
 - <Inconsistent naming between two features that probably should align>
-- <An epic that has grown enough to warrant splitting>
 - <A code area where coverage is consistently thin>
 - <Step definitions that look like they could be consolidated>
 

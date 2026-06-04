@@ -1,0 +1,40 @@
+# Architecture
+
+<One or two sentences: what this system is and what problem it solves. No jargon.>
+
+This document describes the current technical design. The reasoning behind structural choices lives in DESIGN_DECISIONS.md — update both when the architecture changes.
+
+## Domain model
+
+<Key domain entities and their relationships. Plain English, focused on concepts rather than implementation. 3–8 items.>
+
+- **<Entity>**: <What it represents and how it relates to others.>
+- **<Entity>**: <...>
+
+## System boundaries
+
+<What this system owns and where it hands off. Include external APIs, queues, databases, and third-party services this system integrates with.>
+
+- **Owned by this system**: <...>
+- **External dependencies**: <Service/API name — what we call it for and who owns it>
+- **Produces / consumed by**: <Downstream systems or consumers, if any>
+
+## Module structure
+
+<How the codebase is layered or partitioned. Reference actual paths. Describe the purpose of each layer, not just its name.>
+
+- **`<path/to/layer>`**: <What lives here and the rule for what belongs here vs elsewhere.>
+- **`<path/to/layer>`**: <...>
+
+## Key abstractions
+
+<The core types, interfaces, or contracts that the system is built around. The things a new developer must understand before anything else makes sense.>
+
+- **`<TypeName / InterfaceName>`**: <What it represents and why it's a central abstraction.>
+- **`<TypeName / InterfaceName>`**: <...>
+
+## Cross-cutting concerns
+
+<Behaviour that spans multiple features: auth, error handling, logging, caching, background jobs, etc. Note where each is implemented and any invariants that apply system-wide.>
+
+- **<Concern>**: <How it's handled and where.>

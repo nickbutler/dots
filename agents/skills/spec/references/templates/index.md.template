@@ -1,0 +1,20 @@
+# Features
+
+<One or two sentences describing the product in plain English: what it does and for whom. No class names, file paths, or technical jargon.>
+
+## Progress
+
+| Feature | Status | Description |
+|---|---|---|
+| [<Feature name>](features/<feature-slug>.md) | draft | <one-line description> |
+
+`deferred` features are excluded from progress counts.
+
+## How this set is organised
+
+- `features/<feature-slug>.md` — one file per user-facing feature, with user story, Gherkin acceptance criteria, and technical notes
+- `features/<feature-slug>.feature` — executable Gherkin paired with the `.md` above
+
+Cross-cutting artefacts at the root:
+- `GAPS.md` — behaviour referenced in specs but not confirmable from code/docs
+- `STEP_DEFINITIONS_PROPOSED.md` — new Gherkin step definitions proposed by spec authoring

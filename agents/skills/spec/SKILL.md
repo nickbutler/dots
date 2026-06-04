@@ -1,11 +1,11 @@
 ---
 name: spec
-description: Create, infer, or update a structured spec set (epics, features, Gherkin BDD acceptance criteria, executable .feature files). Three modes — invoke as /spec create (design a spec from conversation before code exists), /spec infer (reverse-engineer a spec from an existing codebase), or /spec update (reconcile existing specs with code changes). Each feature produces a paired .md (user story, context, technical notes) and .feature (executable Gherkin for pytest-bdd or Cucumber). Trigger this skill even when the user does not explicitly name a mode — phrases like "let's plan what we're building" or "spec out the new feature" → create; "document what we have", "write user stories for the existing system", "create a specs folder" → infer; "specs are out of date", "sync the specs", "what's drifted" → update. When mode is ambiguous, auto-detect from context (see Mode dispatch).
+description: Create, infer, or update a structured spec set (features, Gherkin BDD acceptance criteria, executable .feature files). Three modes — invoke as /spec create (design a spec from conversation before code exists), /spec infer (reverse-engineer a spec from an existing codebase), or /spec update (reconcile existing specs with code changes). Each feature produces a paired .md (user story, context, technical notes) and .feature (executable Gherkin for pytest-bdd or Cucumber). Trigger this skill even when the user does not explicitly name a mode — phrases like "let's plan what we're building" or "spec out the new feature" → create; "document what we have", "write user stories for the existing system", "create a specs folder" → infer; "specs are out of date", "sync the specs", "what's drifted" → update. When mode is ambiguous, auto-detect from context (see Mode dispatch).
 ---
 
 # Spec
 
-Generate and maintain a structured spec set: epics, feature files with Gherkin BDD acceptance criteria, and supporting artefacts.
+Generate and maintain a structured spec set: a flat list of feature files with Gherkin BDD acceptance criteria and supporting artefacts.
 
 ## Mode dispatch
 
@@ -27,28 +27,29 @@ Generate and maintain a structured spec set: epics, feature files with Gherkin B
 
 ```
 specs/
-├── EPICS.md                          # top-level index
-├── GAPS.md                           # items needing clarification (see mode notes)
+├── INDEX.md                          # flat feature list with status
+├── ARCHITECTURE.md                   # cross-cutting technical design (current state)
+├── DESIGN_DECISIONS.md               # ADR log — decisions made and considerations weighed
+├── GAPS.md                           # items needing clarification
 ├── STEP_DEFINITIONS_PROPOSED.md      # proposed new Gherkin steps
-├── DESIGN_DECISIONS.md               # [create mode only] decided choices and open questions
 ├── SYNC_REPORT.md                    # [update mode only] report for the current sync run
-└── <epic-slug>/
-    ├── EPIC.md
-    ├── features/
-    │   ├── <feature-slug>.md         # user story, context, technical notes, status
-    │   └── <feature-slug>.feature    # executable Gherkin (pytest-bdd / Cucumber)
-    └── archived/                     # [update mode] deprecated features
-        ├── <feature-slug>.md
-        └── <feature-slug>.feature
+├── features/
+│   ├── <feature-slug>.md             # user story, context, technical notes, status
+│   └── <feature-slug>.feature        # executable Gherkin (pytest-bdd / Cucumber)
+└── archived/                         # [update mode] deprecated features
+    ├── <feature-slug>.md
+    └── <feature-slug>.feature
 ```
+
+**`ARCHITECTURE.md`** documents the current technical design: key abstractions, system boundaries, module structure, and the major structural choices reflected in the codebase. It describes *what is true now* and is updated when the structure changes.
+
+**`DESIGN_DECISIONS.md`** is the ADR log: *why* the architecture looks the way it does. Each entry records the decision made, the alternatives considered, and the constraints or considerations that drove the choice. Entries are append-only — revise by adding a new entry, not overwriting.
 
 Each feature is a pair of files with the same slug. The `.md` carries the human-readable context; the `.feature` carries the executable Gherkin. They are always created and archived together.
 
 Use `kebab-case` slugs derived from names, not numbers.
 
 ## Shared: core disciplines
-
-**Epics before features.** Draft and confirm the complete epic list before generating any feature files. Once confirmed, work through epics one at a time — establish format with the first feature of the first epic, then proceed.
 
 **Stop at checkpoints.** Each mode has natural decision points. Stop at each and confirm before proceeding. Compounding a wrong assumption across many files is expensive; a one-sentence confirmation is cheap.
 
@@ -134,17 +135,15 @@ Each feature file carries a `**Status**:` line below its title. Statuses flow in
 | `in progress` | Implementation underway; scenarios not yet passing |
 | `passing` | All acceptance scenarios green |
 | `failing` | Scenarios were passing; now failing (regression) |
-| `deferred` | Intentionally postponed; not counted in epic progress |
+| `deferred` | Intentionally postponed; not counted in progress |
 
-**EPIC.md** maintains a features table with a Status column — the single place to see all features in an epic at a glance.
-
-**EPICS.md** maintains a Progress table showing `Passing / Total` per epic — `deferred` features excluded from both counts.
+**INDEX.md** maintains a features table with a Status column — the single place to see all features and their status at a glance. `deferred` features are excluded from progress counts.
 
 **Updating statuses:**
 - `create` and `infer` modes: all new features start at `draft`
 - `update` mode: when code evidence confirms a feature is implemented and tests are present, propose advancing to `in progress` or `passing`; when referenced code disappears, flag as `failing` and prompt the user
-- Status changes outside `update` mode are manual — the user edits the feature file and the EPIC.md table directly
-- After any status change, recalculate the EPICS.md Progress table
+- Status changes outside `update` mode are manual — the user edits the feature file and INDEX.md directly
+- After any status change, recalculate the INDEX.md progress counts
 
 ## Shared: templates
 
@@ -152,13 +151,13 @@ All templates are in `references/templates/`. Read each one just-in-time — onl
 
 | Template | Used by |
 |---|---|
-| `epics.md.template` | all modes |
-| `epic.md.template` | all modes |
+| `index.md.template` | all modes |
+| `architecture.md.template` | all modes |
+| `design-decisions.md.template` | all modes |
 | `feature.md.template` | all modes — human-readable context |
 | `feature.feature.template` | all modes — executable Gherkin |
 | `gaps.md.template` | all modes |
 | `step-definitions-proposed.md.template` | all modes |
-| `design-decisions.md.template` | create mode |
 | `sync-report.md.template` | update mode |
 
 ---
@@ -209,7 +208,7 @@ Ask questions **one at a time**, in this order. Use earlier answers to skip ques
 
 **Strongly useful (ask if still unclear after the above):**
 
-5. *"What is explicitly out of scope?"* — prevents the epic list from expanding unboundedly
+5. *"What is explicitly out of scope?"* — prevents the feature list from expanding unboundedly
 6. *"What platform or interface?"* — web app, mobile, CLI, API, or combination
 
 **Nice to have (ask only if relevant and not yet answered):**
@@ -235,25 +234,19 @@ Flag any category with insufficient signal — those become initial Open entries
 
 **Stop. Let the user correct or extend the elicitation summary before proceeding.**
 
-#### 2. Epic identification
+#### 2. Feature enumeration
 
-Draft the full set of epics — typically 3–6 — each with a one-line user-facing description and an MVP / later-phase label. This is the complete map of the system, not a shortlist for picking a starting point.
+Draft the full feature list — each with a one-line user-facing description, the actor, and an MVP / later-phase label. This is the complete map of the system, not a shortlist.
 
-**Stop. Confirm the epic list in full before scaffolding or writing any features.** Once confirmed, ask which epic to start with, or default to the most foundational MVP epic.
+**Stop. Confirm the feature list before scaffolding or writing any feature files.**
 
 #### 3. Scaffold
 
-Create directory structure and stub files for all confirmed epics: `EPICS.md`, `DESIGN_DECISIONS.md` (populate with decisions and open questions surfaced so far), `GAPS.md` (empty structure), `STEP_DEFINITIONS_PROPOSED.md` (empty), and for each epic: `<epic-slug>/EPIC.md` (stub), `<epic-slug>/features/` (empty).
+Create directory structure and stub files: `INDEX.md` (stub), `ARCHITECTURE.md` (stub — sections present, content TBD), `DESIGN_DECISIONS.md` (populate with decisions and open questions surfaced so far), `GAPS.md` (empty structure), `STEP_DEFINITIONS_PROPOSED.md` (empty), and `features/` (empty).
 
 **Stop. Confirm structure before populating.**
 
-#### 4. Feature enumeration
-
-List features within the starting epic, one line each. Each must state the user capability, the actor, and whether it's MVP or later.
-
-**Stop. Confirm feature list.**
-
-#### 5. First feature
+#### 4. First feature
 
 Generate one feature file in full, with these adaptations:
 - `Technical notes` → populate what's known; use `TBD: <question>` for undecided implementation details; each TBD should also appear in `DESIGN_DECISIONS.md` (Open)
@@ -261,11 +254,9 @@ Generate one feature file in full, with these adaptations:
 
 **Stop. Get explicit feedback before applying the format to remaining features.**
 
-#### 6. Remaining features → Finalise → Report
+#### 5. Remaining features → Finalise → Report
 
-Generate remaining features for the current epic. Complete `EPIC.md`. Populate `DESIGN_DECISIONS.md` with all choices and open questions from the session. Report: file tree, domain vocabulary established, count of open decisions, count of spec gaps, recommended next step.
-
-Do not proceed to the next epic without explicit instruction.
+Generate remaining features. Complete `INDEX.md`. Populate `ARCHITECTURE.md` with the cross-cutting design that emerged from the discussion — key abstractions, module boundaries, and the structural choices that span multiple features. Populate `DESIGN_DECISIONS.md` with all choices and open questions from the session. Report: file tree, domain vocabulary established, count of open decisions, count of spec gaps, recommended next step.
 
 ---
 
@@ -316,35 +307,27 @@ If both `PLAN.md` and `ARCHITECTURE.md` are missing, ask before proceeding.
 
 #### 1. Reconnaissance
 
-Read input documents. Build a map of the codebase (directory listing, outline-mode reading — don't load full files speculatively). Identify major user-facing capabilities, layering, and the existing step vocabulary.
+Read input documents. Build a map of the codebase (directory listing, outline-mode reading — don't load full files speculatively). Identify major user-facing capabilities and the existing step vocabulary.
 
-Report: what you found, then the full set of epics identified — each with a one-line user-facing description. Include all major user-facing capabilities, not a shortlist.
+Report: what you found, then the full feature list — each with a one-line user-facing description. Include all confirmed user-facing capabilities, not a shortlist.
 
-**Stop. Wait for the user to confirm the complete epic list.** Once confirmed, ask which epic to start with, or default to the most bounded and self-contained MVP epic.
+**Stop. Wait for the user to confirm the feature list.**
 
 #### 2. Scaffold
 
-Create directory structure and stub files for all confirmed epics: `EPICS.md` (begins with a plain-English product description, 1–2 sentences, no class names or file paths), `GAPS.md`, `STEP_DEFINITIONS_PROPOSED.md`, and for each epic: `<epic-slug>/EPIC.md` (stub), `<epic-slug>/features/` (empty).
+Create directory structure and stub files: `INDEX.md` (begins with a plain-English product description, 1–2 sentences, no class names or file paths), `ARCHITECTURE.md` (stub), `DESIGN_DECISIONS.md` (stub), `GAPS.md`, `STEP_DEFINITIONS_PROPOSED.md`, and `features/` (empty).
 
 **Stop. Confirm structure before populating.**
 
-#### 3. Feature enumeration
-
-List features within the starting epic, one line each. Each must reference at least one file path where the feature is implemented.
-
-**Stop. Confirm feature list.**
-
-#### 4. First feature
+#### 3. First feature
 
 Generate one feature file in full. Apply the confirmed-only rule strictly. Add unconfirmed steps to `STEP_DEFINITIONS_PROPOSED.md`.
 
 **Stop. Get explicit feedback on the first feature before applying the format to the rest.**
 
-#### 5. Remaining features → Finalise → Report
+#### 4. Remaining features → Finalise → Report
 
-Generate remaining features for the current epic. Complete `EPIC.md`. Update `EPICS.md` to reflect progress. Review `GAPS.md` and `STEP_DEFINITIONS_PROPOSED.md`. Report: file tree, what's covered and what's in GAPS, number of proposed step definitions, patterns or inconsistencies noticed (flag, do not fix).
-
-Do not proceed to the next epic without explicit instruction.
+Generate remaining features. Complete `INDEX.md`. Populate `ARCHITECTURE.md` by synthesising from the codebase: key abstractions, module structure, system boundaries, and the major structural patterns observed. Populate `DESIGN_DECISIONS.md` with any structural choices that are visible in the code but whose rationale is not self-evident — note them as Decided entries with the evidence as context. Review `GAPS.md` and `STEP_DEFINITIONS_PROPOSED.md`. Report: file tree, what's covered and what's in GAPS, number of proposed step definitions, patterns or inconsistencies noticed (flag, do not fix).
 
 ---
 
@@ -371,7 +354,7 @@ Reconcile an existing spec set with the current state of the codebase. Detect dr
 
 **Surface, don't decide.** When intent is ambiguous (intentional removal or accidental regression?), prompt the user rather than guessing.
 
-**Never silently delete.** Removed features get archived to `specs/<epic>/archived/`, not deleted.
+**Never silently delete.** Removed features get archived to `specs/archived/`, not deleted.
 
 **Changes reviewed via git.** Apply changes directly to files. The user reviews via `git diff specs/` and commits, amends, or reverts as they choose.
 
@@ -405,15 +388,16 @@ In order:
 - **Refactor-only**: update technical notes (paths, type names) without touching scenarios
 - **Drift candidates**: update unambiguous changes; prompt the user on ambiguous ones
 - **Uncovered**: create feature files using `references/templates/feature.md.template`; apply confirmed-only rule
-- **Deprecated**: move to `specs/<epic>/archived/<feature-slug>.md` with deprecation header (date, last commit, reason if known — prompt if unknown)
+- **Deprecated**: move to `specs/archived/<feature-slug>.md` with deprecation header (date, last commit, reason if known — prompt if unknown)
 - **Resolved gaps**: move content into the relevant spec file; add a brief "resolved" note in `GAPS.md`
 - **Satisfied proposals**: remove from `STEP_DEFINITIONS_PROPOSED.md`
 - **Obsolete entries**: remove with a one-line note in a history section if one exists
 
 ### Update cross-cutting files
 
-- `EPICS.md`: add candidate epics if new uncovered areas suggest them
-- `EPIC.md` (per affected epic): refresh feature list, architecture notes
+- `INDEX.md`: add candidate features if new uncovered areas suggest them; recalculate progress counts
+- `ARCHITECTURE.md`: update when structural changes are detected — new modules, changed boundaries, revised abstractions; do not touch if the changes are behaviour-only
+- `DESIGN_DECISIONS.md`: append new entries for structural choices made since the last sync; never overwrite existing entries
 - `GAPS.md`: open and newly-discovered gaps only
 - `STEP_DEFINITIONS_PROPOSED.md`: pending and newly-proposed steps only
 
@@ -435,6 +419,6 @@ Bundle clarification questions when possible. Ask (don't guess) when:
 
 ## Override flags (all modes)
 
-- **"Generate all epics in one pass"** — after confirming the epic list, generate all epics without stopping between them; still stop after the first feature of the first epic for format review
+- **"Generate all features in one pass"** — after confirming the feature list, generate all features without stopping between them; still stop after the first feature for format review
 - **"Include inferred behaviour, tag inline"** — (infer/update) switch to Confirmed/Inferred/Gap inline tagging instead of separate GAPS.md
 - **"Skip step definition verification"** — write idiomatic Gherkin without checking against the library; still record proposed steps

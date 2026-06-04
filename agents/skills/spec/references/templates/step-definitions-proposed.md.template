@@ -12,7 +12,7 @@ New browser-primitive steps not yet in the library. Must match the primitive voc
 
 ### `<Step phrase as it appears in Gherkin>`
 
-- **Used in**: `<epic-slug>/features/<feature>.feature`
+- **Used in**: `features/<feature>.feature`
 - **Vocabulary entry**: <Which row in the primitive vocabulary table this maps to>
 - **Suggested parameters**: <Any captures, e.g. quoted strings, numbers>
 - **Implementation sketch**: <What the browser automation should do>
@@ -25,10 +25,10 @@ Named sequences of interaction steps that appear as `Given` preconditions across
 
 ### `<Step phrase — past tense, e.g. "I have added {product} to my cart">`
 
-- **Consolidates**: `<epic-slug>/features/<feature-a>.md`, `<epic-slug>/features/<feature-b>.md`
+- **Consolidates**: `features/<feature-a>.md`, `features/<feature-b>.md`
 - **Composed of**:
   1. `<interaction step 1>`
   2. `<interaction step 2>`
   3. `<...>`
 - **Parameters**: <What varies between uses, e.g. `{product}` mapped to which interaction step>
-- **Lower-level feature**: `<epic-slug>/features/<feature>.md` — the feature file that documents this task in full using interaction steps
+- **Lower-level feature**: `features/<feature>.md` — the feature file that documents this task in full using interaction steps

@@ -1,7 +1,6 @@
 Feature: <Name>
 
   # Layer: <interaction | task>
-  # Epic: <epic-slug>
   # Status: draft
 
   Background:
