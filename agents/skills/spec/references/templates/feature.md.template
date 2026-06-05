@@ -19,6 +19,7 @@ See [`<feature-slug>.feature`](./<feature-slug>.feature) for the executable Gher
 - **Implementation locations**: `<path/to/handler>`, `<path/to/service>`, `<path/to/view>`
 - **Key types/contracts**: `<TypeName>`, `<EndpointPath>`, `<EventName>`
 - **Dependencies**: <Other features, services, or modules this depends on>
+- **Relevant principles / constraints**: <Which entries from ARCHITECTURE.md apply to this feature, and how they shape the implementation.>
 - **Non-obvious behaviour**: <Anything a developer would otherwise discover by reading the code — invariants, ordering constraints, side effects, gotchas>
 
 ## Notes on confirmation

@@ -232,6 +232,12 @@ Synthesise from the conversation (or interview answers from step 0):
 
 Flag any category with insufficient signal — those become initial Open entries in `DESIGN_DECISIONS.md`.
 
+Also identify from the conversation:
+- **Design principles**: any "how we build" rules stated or implied — architectural patterns, coding philosophy, team norms
+- **Constraints**: hard limits mentioned — technical, legal, operational, or organisational
+
+If neither has been stated, ask before proceeding to feature enumeration. These shape how every feature is described and what belongs in Technical notes — they cannot be retrofitted cleanly once features are written.
+
 **Stop. Let the user correct or extend the elicitation summary before proceeding.**
 
 #### 2. Feature enumeration
@@ -250,6 +256,7 @@ Create directory structure and stub files: `INDEX.md` (stub), `ARCHITECTURE.md` 
 
 Generate one feature file in full, with these adaptations:
 - `Technical notes` → populate what's known; use `TBD: <question>` for undecided implementation details; each TBD should also appear in `DESIGN_DECISIONS.md` (Open)
+- `Relevant principles / constraints` → identify which entries from `ARCHITECTURE.md` shape this feature's implementation; if ARCHITECTURE.md is not yet populated, note what principles apply based on the discussion so far
 - `Notes on confirmation` → rename to `Notes on scope`; flag scenarios that are inferred from discussion (not explicitly stated), edge cases not discussed, or contingent on an open decision
 
 **Stop. Get explicit feedback before applying the format to remaining features.**
@@ -309,9 +316,11 @@ If both `PLAN.md` and `ARCHITECTURE.md` are missing, ask before proceeding.
 
 Read input documents. Build a map of the codebase (directory listing, outline-mode reading — don't load full files speculatively). Identify major user-facing capabilities and the existing step vocabulary.
 
-Report: what you found, then the full feature list — each with a one-line user-facing description. Include all confirmed user-facing capabilities, not a shortlist.
+While reading, look for evidence of design principles and constraints in `CLAUDE.md`, `ARCHITECTURE.md`, `PLAN.md`, READMEs, or configuration. These may be explicit ("we use a layered architecture") or implicit (a consistent pattern across the codebase that reflects a deliberate choice).
 
-**Stop. Wait for the user to confirm the feature list.**
+Report: what you found, then the full feature list — each with a one-line user-facing description. Include all confirmed user-facing capabilities, not a shortlist. Include a brief section on principles and constraints identified — and explicitly flag if none were found, prompting the user to state them before features are written.
+
+**Stop. Wait for the user to confirm the feature list and establish any missing principles / constraints.**
 
 #### 2. Scaffold
 
@@ -321,7 +330,7 @@ Create directory structure and stub files: `INDEX.md` (begins with a plain-Engli
 
 #### 3. First feature
 
-Generate one feature file in full. Apply the confirmed-only rule strictly. Add unconfirmed steps to `STEP_DEFINITIONS_PROPOSED.md`.
+Generate one feature file in full. Apply the confirmed-only rule strictly. Add unconfirmed steps to `STEP_DEFINITIONS_PROPOSED.md`. In Technical notes, populate `Relevant principles / constraints` from `ARCHITECTURE.md` — which principles or constraints visibly shape how this feature is implemented.
 
 **Stop. Get explicit feedback on the first feature before applying the format to the rest.**
 

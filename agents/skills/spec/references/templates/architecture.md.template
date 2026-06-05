@@ -4,37 +4,36 @@
 
 This document describes the current technical design. The reasoning behind structural choices lives in DESIGN_DECISIONS.md — update both when the architecture changes.
 
-## Domain model
+## Design principles
 
-<Key domain entities and their relationships. Plain English, focused on concepts rather than implementation. 3–8 items.>
+<The "how we build" rules that apply across all features. Each principle should be actionable: a developer reading it should be able to apply it when making a decision. Include the rationale briefly — a principle without a reason is a rule without teeth.>
 
-- **<Entity>**: <What it represents and how it relates to others.>
-- **<Entity>**: <...>
+- **<Principle name>**: <What it means in practice. Why it matters for this project.>
+- **<Principle name>**: <...>
 
-## System boundaries
+## Constraints
 
-<What this system owns and where it hands off. Include external APIs, queues, databases, and third-party services this system integrates with.>
+<Hard limits that are non-negotiable — technical, legal, operational, or organisational. These are not preferences; they are boundaries that features must be designed within.>
 
-- **Owned by this system**: <...>
-- **External dependencies**: <Service/API name — what we call it for and who owns it>
-- **Produces / consumed by**: <Downstream systems or consumers, if any>
+- **<Constraint>**: <What is ruled out or required, and why it exists.>
+- **<Constraint>**: <...>
 
 ## Module structure
 
-<How the codebase is layered or partitioned. Reference actual paths. Describe the purpose of each layer, not just its name.>
+<How the codebase is layered or partitioned. Reference actual paths. Describe the purpose of each layer and the rule for what belongs there.>
 
-- **`<path/to/layer>`**: <What lives here and the rule for what belongs here vs elsewhere.>
+- **`<path/to/layer>`**: <What lives here and what belongs here vs elsewhere.>
 - **`<path/to/layer>`**: <...>
 
 ## Key abstractions
 
-<The core types, interfaces, or contracts that the system is built around. The things a new developer must understand before anything else makes sense.>
+<The core types, interfaces, or contracts the system is built around. What a new developer must understand before anything else makes sense.>
 
-- **`<TypeName / InterfaceName>`**: <What it represents and why it's a central abstraction.>
+- **`<TypeName / InterfaceName>`**: <What it represents and why it is a central abstraction.>
 - **`<TypeName / InterfaceName>`**: <...>
 
 ## Cross-cutting concerns
 
-<Behaviour that spans multiple features: auth, error handling, logging, caching, background jobs, etc. Note where each is implemented and any invariants that apply system-wide.>
+<Behaviour that spans multiple features: auth, error handling, logging, caching, background jobs, etc. Where each is implemented and any invariants that apply system-wide.>
 
-- **<Concern>**: <How it's handled and where.>
+- **<Concern>**: <How it is handled and where.>
