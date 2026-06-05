@@ -29,6 +29,7 @@ Generate and maintain a structured spec set: a flat list of feature files with G
 specs/
 ├── INDEX.md                          # flat feature list with status
 ├── ARCHITECTURE.md                   # cross-cutting technical design (current state)
+├── DATA_MODEL.md                     # [optional] entity definitions, fields, types, persistence
 ├── DESIGN_DECISIONS.md               # ADR log — decisions made and considerations weighed
 ├── GAPS.md                           # items needing clarification
 ├── STEP_DEFINITIONS_PROPOSED.md      # proposed new Gherkin steps
@@ -41,7 +42,9 @@ specs/
     └── <feature-slug>.feature
 ```
 
-**`ARCHITECTURE.md`** documents the current technical design: key abstractions, system boundaries, module structure, and the major structural choices reflected in the codebase. It describes *what is true now* and is updated when the structure changes.
+**`ARCHITECTURE.md`** documents the current technical design: design principles, constraints, key abstractions, system boundaries, and module structure. It describes *what is true now* and is updated when the structure changes.
+
+**`DATA_MODEL.md`** is optional — create it when the project has persistent or structured data worth specifying. It holds the concrete detail: entity definitions, field names, types, validation rules, and persistence notes. `ARCHITECTURE.md` keeps the conceptual domain overview; `DATA_MODEL.md` is where an implementer goes to understand the actual shape of the data.
 
 **`DESIGN_DECISIONS.md`** is the ADR log: *why* the architecture looks the way it does. Each entry records the decision made, the alternatives considered, and the constraints or considerations that drove the choice. Entries are append-only — revise by adding a new entry, not overwriting.
 
@@ -153,6 +156,7 @@ All templates are in `references/templates/`. Read each one just-in-time — onl
 |---|---|
 | `index.md.template` | all modes |
 | `architecture.md.template` | all modes |
+| `data-model.md.template` | all modes — when the project has persistent or structured data |
 | `design-decisions.md.template` | all modes |
 | `feature.md.template` | all modes — human-readable context |
 | `feature.feature.template` | all modes — executable Gherkin |
@@ -250,6 +254,8 @@ Draft the full feature list — each with a one-line user-facing description, th
 
 Create directory structure and stub files: `INDEX.md` (stub), `ARCHITECTURE.md` (stub — sections present, content TBD), `DESIGN_DECISIONS.md` (populate with decisions and open questions surfaced so far), `GAPS.md` (empty structure), `STEP_DEFINITIONS_PROPOSED.md` (empty), and `features/` (empty).
 
+If the project has entities, records, or structured data that will be persisted or shared across features, also create `DATA_MODEL.md` (stub). If it is not obvious from the conversation, ask: *"Does this project have a data model — entities or records that need defining?"*
+
 **Stop. Confirm structure before populating.**
 
 #### 4. First feature
@@ -325,6 +331,8 @@ Report: what you found, then the full feature list — each with a one-line user
 #### 2. Scaffold
 
 Create directory structure and stub files: `INDEX.md` (begins with a plain-English product description, 1–2 sentences, no class names or file paths), `ARCHITECTURE.md` (stub), `DESIGN_DECISIONS.md` (stub), `GAPS.md`, `STEP_DEFINITIONS_PROPOSED.md`, and `features/` (empty).
+
+If the codebase has models, schemas, migrations, or structured data types, also create `DATA_MODEL.md` (stub — populate in step 4 from what you've read).
 
 **Stop. Confirm structure before populating.**
 
@@ -406,6 +414,7 @@ In order:
 
 - `INDEX.md`: add candidate features if new uncovered areas suggest them; recalculate progress counts
 - `ARCHITECTURE.md`: update when structural changes are detected — new modules, changed boundaries, revised abstractions; do not touch if the changes are behaviour-only
+- `DATA_MODEL.md`: update when entities are added, removed, or their fields/types change; if `DATA_MODEL.md` doesn't exist but the codebase now has meaningful persistent data, propose creating it
 - `DESIGN_DECISIONS.md`: append new entries for structural choices made since the last sync; never overwrite existing entries
 - `GAPS.md`: open and newly-discovered gaps only
 - `STEP_DEFINITIONS_PROPOSED.md`: pending and newly-proposed steps only

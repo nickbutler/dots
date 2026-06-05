@@ -1,0 +1,39 @@
+# Data model
+
+<One or two sentences: what data this system owns, and the persistence mechanism (e.g. relational database, document store, in-memory, flat files).>
+
+This document describes the concrete data structures. The conceptual domain overview lives in ARCHITECTURE.md. Decisions about data model design belong in DESIGN_DECISIONS.md.
+
+## Entities
+
+<One section per entity. Include every field that matters for feature implementation — omit generated or framework-managed fields (e.g. created_at) unless they carry business meaning.>
+
+### <EntityName>
+
+<One sentence: what this entity represents and its role in the domain.>
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `<field_name>` | `<type>` | yes / no | <Validation rules, constraints, default values, or non-obvious behaviour.> |
+| `<field_name>` | `<type>` | yes / no | |
+
+**Constraints / invariants**: <Business rules that apply to this entity as a whole — e.g. uniqueness across fields, state machine rules, mutual exclusivity.>
+
+### <EntityName>
+
+<...>
+
+## Relationships
+
+<How entities relate to each other. Use plain English; add a diagram reference if one exists.>
+
+- **<Entity> → <Entity>**: <Cardinality and description. E.g. "A User has many Orders; an Order belongs to exactly one User.">
+- **<Entity> → <Entity>**: <...>
+
+## Persistence notes
+
+<Storage mechanism, schema location, migration approach, and any non-obvious persistence behaviour — e.g. soft deletes, audit tables, caching layers, read/write splits.>
+
+- **Storage**: <Database type and name, or file format.>
+- **Schema location**: `<path/to/migrations>` or `<path/to/schema_file>`
+- **Notable patterns**: <Soft deletes, event sourcing, denormalisation, etc. — only if present.>
