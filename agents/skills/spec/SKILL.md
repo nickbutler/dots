@@ -377,9 +377,8 @@ Reconcile an existing spec set with the current state of the codebase. Detect dr
 
 ### Change detection (in preference order)
 
-1. **Git-based**: diff between the last commit touching `specs/` and `HEAD`
-2. **Sync marker**: if `specs/.last_sync` exists with a commit SHA, diff from there to `HEAD`
-3. **Fallback**: compare file modification times between `specs/` and source directories
+1. **Git-based**: `git log -- specs/ | head -1` to find the last commit touching `specs/`, then diff from there to `HEAD`
+2. **Fallback**: compare file modification times between `specs/` and source directories
 
 Report the detection method used. This appears in `SYNC_REPORT.md`.
 
@@ -421,7 +420,7 @@ In order:
 
 ### Finalise
 
-Write `specs/SYNC_REPORT.md` using `references/templates/sync-report.md.template`. Write current HEAD SHA to `specs/.last_sync`.
+Write `specs/SYNC_REPORT.md` using `references/templates/sync-report.md.template`.
 
 Report: total files changed, clarifications requested and resolved, items deferred, pointer to `SYNC_REPORT.md`, suggestion to review via `git diff specs/`.
 
