@@ -20,6 +20,17 @@ Treat test coverage as a weak signal, not a guarantee. Coverage tells you a line
 
 For projects where test quality matters, suggest mutation testing (Stryker for JS/TS, mutmut for Python) as a periodic check rather than a CI gate — it's too slow to run continuously but effective at finding tests that execute without validating.
 
+### README-driven development
+Before writing code for a new project or feature, I sometimes write the README first — describing how the thing will be used, what it does, and what the interface looks like. Treat the README as the design document and the source of truth for what to build.
+
+When a README exists before implementation:
+- Read it before proposing any architecture or writing any code.
+- Use it to resolve ambiguity about intended behaviour — what the README describes is what we're building.
+- Flag any gaps or contradictions between the README and the code as you find them.
+- Keep the README in sync as the implementation evolves; if the README says one thing and the code does another, that's a bug in the docs.
+
+This pairs naturally with TDD: README describes the intent → tests encode the behaviour → code makes them pass.
+
 ### Deterministic before AI
 Prefer rule-based, algorithmic solutions first. Only reach for LLMs when a deterministic approach is genuinely insufficient. LLMs introduce latency, cost, and non-determinism — those tradeoffs need to be justified by real ambiguity in the problem.
 
