@@ -99,13 +99,17 @@ Scenario: Complete a purchase
 - The tense difference makes the layer immediately visible when reading a scenario
 
 **Proposing new steps:**
-- Interaction steps must come from the primitive vocabulary — no exceptions
+- Interaction steps must come from the project's established primitive vocabulary. If the project's domain is not covered by the reference vocabularies below, define an appropriate primitive family in `STEP_DEFINITIONS_PROPOSED.md` before writing any feature files — do not invent one-off interaction steps inside scenarios.
 - Task steps only when the cross-feature duplication condition above is met; note which feature files they consolidate
 - Do not propose a task step that wraps a single interaction — that is just renaming a primitive
 
-### Primitive browser vocabulary (Layer 1)
+### Primitive vocabulary (Layer 1)
 
-Parameters use `{curly_braces}`. All locators use visible text or label — never CSS selectors, XPath, or element IDs.
+The primitive vocabulary is domain-dependent. This skill ships two reference vocabularies — **browser** and **CLI**. Use the one that fits the project's interface; a single project may use both (e.g. a CLI tool with a web UI). When the project's domain fits neither (e.g. a mobile app, a message-queue consumer, an API-only service), establish a new primitive family in `STEP_DEFINITIONS_PROPOSED.md` before writing any feature files.
+
+Parameters use `{curly_braces}`.
+
+**Browser** — locators use visible text or label; never CSS selectors, XPath, or element IDs.
 
 | Step | Category | Notes |
 |---|---|---|
@@ -126,6 +130,26 @@ Parameters use `{curly_braces}`. All locators use visible text or label — neve
 | `the {text} button should be disabled` | Assertion | |
 | `the {text} button should be enabled` | Assertion | |
 | `I should see an error {text}` | Assertion | For inline validation messages |
+
+**CLI** — commands are subcommand-and-flags only; path arguments go in a separate `at path "{path}"` clause. Values go in step text, not fixture names — step definitions stay generic and parameterised.
+
+| Step | Category | Notes |
+|---|---|---|
+| `I run command "{command}"` | Invocation | Subcommand and flags only, e.g. `"init"`, `"collect --all"` |
+| `I run command "{command}" at path "{path}"` | Invocation | As above, with explicit working directory |
+| `the last command should succeed` | Assertion | Exit code 0 |
+| `the last command should fail` | Assertion | Non-zero exit code |
+| `the last command should exit with code {code}` | Assertion | Specific exit code |
+| `the last command output should contain "{text}"` | Assertion | Match against stdout/stderr |
+| `the file "{path}" exists` | State | Pre-state: file present |
+| `the file "{path}" does not exist` | State | Pre-state: file absent |
+| `the directory "{path}" exists` | State | Pre-state: directory present |
+| `the directory "{path}" does not exist` | State | Pre-state: directory absent |
+| `the file "{path}" should exist` | Assertion | Post-state: file was created |
+| `the file "{path}" should not exist` | Assertion | Post-state: file was not created |
+| `the directory "{path}" should exist` | Assertion | Post-state: directory was created |
+| `the directory "{path}" should not exist` | Assertion | Post-state: directory was not created |
+| `the file "{path}" should contain "{text}"` | Assertion | File content match |
 
 ## Shared: progress tracking
 
