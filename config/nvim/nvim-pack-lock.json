@@ -12,6 +12,14 @@
       "rev": "19eb3c5a05aaa889647af8107a4518b3fb4a4711",
       "src": "https://github.com/aliou/bats.vim"
     },
+    "blink.cmp": {
+      "rev": "35e3923a09ff3db150ceff80004befcbbfa071a0",
+      "src": "https://github.com/saghen/blink.cmp"
+    },
+    "blink.lib": {
+      "rev": "f29d8bac6549bc1e7d699c83f680823d7def98bd",
+      "src": "https://github.com/saghen/blink.lib"
+    },
     "colorizer": {
       "rev": "f5d69c0dea9f36e2eb025c7d86cc62b5a0d8af62",
       "src": "https://github.com/chrisbra/colorizer"
@@ -59,6 +67,10 @@
     "nvim-web-devicons": {
       "rev": "2795c26c916bb3c57dde308b82be51971fa92747",
       "src": "https://github.com/kyazdani42/nvim-web-devicons"
+    },
+    "outline.nvim": {
+      "rev": "c293eb56db880a0539bf9d85b4a27816960b863e",
+      "src": "https://github.com/hedyhli/outline.nvim"
     },
     "plenary.nvim": {
       "rev": "74b06c6c75e4eeb3108ec01852001636d85a932b",

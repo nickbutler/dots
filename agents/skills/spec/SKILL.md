@@ -32,7 +32,6 @@ specs/
 ├── DATA_MODEL.md                     # [optional] entity definitions, fields, types, persistence
 ├── DESIGN_DECISIONS.md               # ADR log — decisions made and considerations weighed
 ├── GAPS.md                           # items needing clarification
-├── STEP_DEFINITIONS_PROPOSED.md      # proposed new Gherkin steps
 ├── SYNC_REPORT.md                    # [update mode only] report for the current sync run
 ├── features/
 │   ├── <feature-slug>.md             # user story, context, technical notes, status
@@ -56,7 +55,7 @@ Use `kebab-case` slugs derived from names, not numbers.
 
 **Stop at checkpoints.** Each mode has natural decision points. Stop at each and confirm before proceeding. Compounding a wrong assumption across many files is expensive; a one-sentence confirmation is cheap.
 
-**Existing step library is canonical.** When `step_definitions/` exists, use its steps verbatim. Propose new steps in `STEP_DEFINITIONS_PROPOSED.md`; never modify the step library directly.
+**Existing step library is canonical.** When `step_definitions/` exists, use its steps verbatim. Never modify the step library directly. When a scenario requires a step that doesn't exist, write the natural Gherkin phrase and tag the scenario `@draft` — a signal that the step needs implementing before the scenario can run.
 
 **No invention.** Never add behaviour, features, or requirements that weren't confirmed (infer/update) or explicitly discussed (create). Speculation goes to `GAPS.md` or `DESIGN_DECISIONS.md`.
 
@@ -64,13 +63,13 @@ Use `kebab-case` slugs derived from names, not numbers.
 
 Read `step_definitions/` thoroughly before writing Gherkin. Use existing steps verbatim where possible. Write idiomatic, readable scenarios — don't contort phrasing to fit the library at the cost of clarity.
 
-When a scenario requires a step that doesn't exist, write the natural Gherkin phrase in the scenario and add an entry to `STEP_DEFINITIONS_PROPOSED.md` using the template.
+When a scenario requires a step that doesn't exist, write the natural Gherkin phrase and tag the scenario `@draft`. The user removes `@draft` when they have reviewed the scenario and are satisfied the step phrasing is correct and ready to implement. Never accumulate `@draft` tags silently — call them out in the report so the user knows what needs sign-off.
 
 ### Two-layer step model
 
 Steps live at one of two levels. Keep them separate — do not mix levels within a scenario.
 
-**Layer 1 — Interactions**: single browser actions from the primitive vocabulary below. Used in feature files that document a task directly.
+**Layer 1 — Interactions**: single primitive actions from the project's vocabulary (see below). Used in feature files that document a task directly.
 
 **Layer 2 — Tasks**: named compositions of interactions representing a meaningful user action. Task steps appear as `Given` preconditions in higher-level feature files. Their implementations call interaction-layer steps.
 
@@ -99,13 +98,14 @@ Scenario: Complete a purchase
 - The tense difference makes the layer immediately visible when reading a scenario
 
 **Proposing new steps:**
-- Interaction steps must come from the project's established primitive vocabulary. If the project's domain is not covered by the reference vocabularies below, define an appropriate primitive family in `STEP_DEFINITIONS_PROPOSED.md` before writing any feature files — do not invent one-off interaction steps inside scenarios.
+- Interaction steps must come from the project's established primitive vocabulary. If the project's domain is not covered by the reference vocabularies below, establish a new primitive family before writing any feature files — document it in `GAPS.md` and get confirmation before use. Do not invent one-off interaction steps inside scenarios.
 - Task steps only when the cross-feature duplication condition above is met; note which feature files they consolidate
 - Do not propose a task step that wraps a single interaction — that is just renaming a primitive
+- Any scenario using an unimplemented or unconfirmed step gets tagged `@draft`
 
 ### Primitive vocabulary (Layer 1)
 
-The primitive vocabulary is domain-dependent. This skill ships two reference vocabularies — **browser** and **CLI**. Use the one that fits the project's interface; a single project may use both (e.g. a CLI tool with a web UI). When the project's domain fits neither (e.g. a mobile app, a message-queue consumer, an API-only service), establish a new primitive family in `STEP_DEFINITIONS_PROPOSED.md` before writing any feature files.
+The primitive vocabulary is domain-dependent. This skill ships two reference vocabularies — **browser** and **CLI**. Use the one that fits the project's interface; a single project may use both (e.g. a CLI tool with a web UI). When the project's domain fits neither (e.g. a mobile app, a message-queue consumer, an API-only service), establish a new primitive family in `GAPS.md` and get confirmation before writing any feature files.
 
 Parameters use `{curly_braces}`.
 
@@ -185,7 +185,6 @@ All templates are in `references/templates/`. Read each one just-in-time — onl
 | `feature.md.template` | all modes — human-readable context |
 | `feature.feature.template` | all modes — executable Gherkin |
 | `gaps.md.template` | all modes |
-| `step-definitions-proposed.md.template` | all modes |
 | `sync-report.md.template` | update mode |
 
 ---
@@ -276,7 +275,7 @@ Draft the full feature list — each with a one-line user-facing description, th
 
 #### 3. Scaffold
 
-Create directory structure and stub files: `INDEX.md` (stub), `ARCHITECTURE.md` (stub — sections present, content TBD), `DESIGN_DECISIONS.md` (populate with decisions and open questions surfaced so far), `GAPS.md` (empty structure), `STEP_DEFINITIONS_PROPOSED.md` (empty), and `features/` (empty).
+Create directory structure and stub files: `INDEX.md` (stub), `ARCHITECTURE.md` (stub — sections present, content TBD), `DESIGN_DECISIONS.md` (populate with decisions and open questions surfaced so far), `GAPS.md` (empty structure), and `features/` (empty).
 
 If the project has entities, records, or structured data that will be persisted or shared across features, also create `DATA_MODEL.md` (stub). If it is not obvious from the conversation, ask: *"Does this project have a data model — entities or records that need defining?"*
 
@@ -293,7 +292,7 @@ Generate one feature file in full, with these adaptations:
 
 #### 5. Remaining features → Finalise → Report
 
-Generate remaining features. Complete `INDEX.md`. Populate `ARCHITECTURE.md` with the cross-cutting design that emerged from the discussion — key abstractions, module boundaries, and the structural choices that span multiple features. Populate `DESIGN_DECISIONS.md` with all choices and open questions from the session. Report: file tree, domain vocabulary established, count of open decisions, count of spec gaps, recommended next step.
+Generate remaining features. Complete `INDEX.md`. Populate `ARCHITECTURE.md` with the cross-cutting design that emerged from the discussion — key abstractions, module boundaries, and the structural choices that span multiple features. Populate `DESIGN_DECISIONS.md` with all choices and open questions from the session. Report: file tree, domain vocabulary established, count of open decisions, count of spec gaps, count of `@draft` scenarios needing step implementation, recommended next step.
 
 ---
 
@@ -354,7 +353,7 @@ Report: what you found, then the full feature list — each with a one-line user
 
 #### 2. Scaffold
 
-Create directory structure and stub files: `INDEX.md` (begins with a plain-English product description, 1–2 sentences, no class names or file paths), `ARCHITECTURE.md` (stub), `DESIGN_DECISIONS.md` (stub), `GAPS.md`, `STEP_DEFINITIONS_PROPOSED.md`, and `features/` (empty).
+Create directory structure and stub files: `INDEX.md` (begins with a plain-English product description, 1–2 sentences, no class names or file paths), `ARCHITECTURE.md` (stub), `DESIGN_DECISIONS.md` (stub), `GAPS.md`, and `features/` (empty).
 
 If the codebase has models, schemas, migrations, or structured data types, also create `DATA_MODEL.md` (stub — populate in step 4 from what you've read).
 
@@ -362,13 +361,13 @@ If the codebase has models, schemas, migrations, or structured data types, also 
 
 #### 3. First feature
 
-Generate one feature file in full. Apply the confirmed-only rule strictly. Add unconfirmed steps to `STEP_DEFINITIONS_PROPOSED.md`. In Technical notes, populate `Relevant principles / constraints` from `ARCHITECTURE.md` — which principles or constraints visibly shape how this feature is implemented.
+Generate one feature file in full. Apply the confirmed-only rule strictly. Tag any scenario with `@draft` if it uses steps not yet in `step_definitions/`. In Technical notes, populate `Relevant principles / constraints` from `ARCHITECTURE.md` — which principles or constraints visibly shape how this feature is implemented.
 
 **Stop. Get explicit feedback on the first feature before applying the format to the rest.**
 
 #### 4. Remaining features → Finalise → Report
 
-Generate remaining features. Complete `INDEX.md`. Populate `ARCHITECTURE.md` by synthesising from the codebase: key abstractions, module structure, system boundaries, and the major structural patterns observed. Populate `DESIGN_DECISIONS.md` with any structural choices that are visible in the code but whose rationale is not self-evident — note them as Decided entries with the evidence as context. Review `GAPS.md` and `STEP_DEFINITIONS_PROPOSED.md`. Report: file tree, what's covered and what's in GAPS, number of proposed step definitions, patterns or inconsistencies noticed (flag, do not fix).
+Generate remaining features. Complete `INDEX.md`. Populate `ARCHITECTURE.md` by synthesising from the codebase: key abstractions, module structure, system boundaries, and the major structural patterns observed. Populate `DESIGN_DECISIONS.md` with any structural choices that are visible in the code but whose rationale is not self-evident — note them as Decided entries with the evidence as context. Report: file tree, what's covered and what's in GAPS, count of `@draft` scenarios needing step implementation, patterns or inconsistencies noticed (flag, do not fix).
 
 ---
 
@@ -418,7 +417,7 @@ For new or significantly-changed code with no matching feature: **Uncovered**
 
 For `GAPS.md` entries: **Resolved**, **Still open**, or **Obsolete**
 
-For `STEP_DEFINITIONS_PROPOSED.md` entries: **Satisfied**, **Still pending**, or **Obsolete**
+For `@draft` scenarios: **Ready** (steps now exist — remove tag), **Still pending** (steps not yet implemented — leave tag), or **Obsolete** (scenario removed)
 
 **Stop. Report the categorisation summary (numbers only). Confirm scope before applying changes.**
 
@@ -430,7 +429,7 @@ In order:
 - **Uncovered**: create feature files using `references/templates/feature.md.template`; apply confirmed-only rule
 - **Deprecated**: move to `specs/archived/<feature-slug>.md` with deprecation header (date, last commit, reason if known — prompt if unknown)
 - **Resolved gaps**: move content into the relevant spec file; add a brief "resolved" note in `GAPS.md`
-- **Satisfied proposals**: remove from `STEP_DEFINITIONS_PROPOSED.md`
+- **Ready `@draft` scenarios**: remove the `@draft` tag
 - **Obsolete entries**: remove with a one-line note in a history section if one exists
 
 ### Update cross-cutting files
@@ -440,7 +439,6 @@ In order:
 - `DATA_MODEL.md`: update when entities are added, removed, or their fields/types change; if `DATA_MODEL.md` doesn't exist but the codebase now has meaningful persistent data, propose creating it
 - `DESIGN_DECISIONS.md`: append new entries for structural choices made since the last sync; never overwrite existing entries
 - `GAPS.md`: open and newly-discovered gaps only
-- `STEP_DEFINITIONS_PROPOSED.md`: pending and newly-proposed steps only
 
 ### Finalise
 
@@ -453,7 +451,6 @@ Report: total files changed, clarifications requested and resolved, items deferr
 Bundle clarification questions when possible. Ask (don't guess) when:
 - A behaviour change could be intentional contract change or accidental regression
 - A feature appears removed but might have been renamed
-- A new step in the library is similar to a pending proposal but not identical
 - Multiple plausible mappings exist between new code and existing features
 
 ---

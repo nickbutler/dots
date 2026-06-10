@@ -17,4 +17,3 @@
 
 Cross-cutting artefacts at the root:
 - `GAPS.md` — behaviour referenced in specs but not confirmable from code/docs
-- `STEP_DEFINITIONS_PROPOSED.md` — new Gherkin step definitions proposed by spec authoring

@@ -6,7 +6,7 @@ This report is informational. Actual changes have been applied directly to spec 
 
 ## Detection
 
-- **Method**: <git-diff from `<sha>` to HEAD | sync-marker from `<sha>` | mtime fallback>
+- **Method**: <git-diff from `<sha>` to HEAD | mtime fallback>
 - **Range**: <commits or time range covered>
 - **Source files inspected**: <count>
 - **Spec files inspected**: <count>
@@ -23,9 +23,9 @@ This report is informational. Actual changes have been applied directly to spec 
 | Gaps resolved | <n> |
 | Gaps still open | <n> |
 | Gaps newly added | <n> |
-| Step proposals satisfied | <n> |
-| Step proposals still pending | <n> |
-| Step proposals newly added | <n> |
+| @draft scenarios cleared (steps implemented) | <n> |
+| @draft scenarios still pending | <n> |
+| @draft scenarios newly added | <n> |
 
 ## Changes by feature
 
@@ -55,15 +55,19 @@ This report is informational. Actual changes have been applied directly to spec 
 
 - **<Feature or area>**: <Brief note on the new gap and why it matters.>
 
-## Step definition reconciliation
+## @draft scenario reconciliation
 
-### Satisfied (removed from proposals)
+### Ready (tag removed — steps now implemented)
 
-- `<Step phrase>` — now implemented in `<path/to/step_definition_file>`
+- `<Scenario name>` in `features/<feature-slug>.feature`
 
-### Newly proposed
+### Still pending (steps not yet implemented)
 
-- `<Step phrase>` — needed for `<feature>`; rationale in STEP_DEFINITIONS_PROPOSED.md
+- `<Scenario name>` in `features/<feature-slug>.feature` — <step phrase(s) needed>
+
+### Newly tagged
+
+- `<Scenario name>` in `features/<feature-slug>.feature` — <step phrase(s) needed>
 
 ## Clarifications requested
 
