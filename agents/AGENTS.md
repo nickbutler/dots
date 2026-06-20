@@ -95,6 +95,9 @@ If a linter rule fires, fix the underlying issue. Don't suppress warnings or rai
 
 Also suggest mutation testing as a periodic quality check — Stryker for JS/TS, mutmut for Python. Wire it into the Makefile (e.g. `make mutation`) but not CI, as it's too slow for every commit.
 
+### Single source of truth for version
+Project version lives in exactly one place. For Python, that's `pyproject.toml` — do not also declare `__version__` in `__init__.py`, do not hardcode it in CLI `--version` output, do not duplicate it in docs that change with releases. If runtime code needs the version, read it from the package metadata (`importlib.metadata.version("pkgname")`). Same principle in other ecosystems: `package.json` for JS, `Cargo.toml` for Rust, etc. — never two places that can drift.
+
 ---
 
 ## Hard rules
