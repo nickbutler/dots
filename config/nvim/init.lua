@@ -220,7 +220,7 @@ vim.g.fzf_colors = {
 
 map('n', '<C-s>', ':Rg ')
 map('n', '<C-f>', '<Cmd>Files<CR>',    { silent = true })
-map('n', '<C-b>', '<Cmd>Buffers<CR>',  { silent = true })
+map('n', '<C-b>', '<Cmd>GFiles?<CR>',  { silent = true })
 map('n', '<C-h>', '<Cmd>History<CR>',  { silent = true })
 map('n', '<C-q>', '<Cmd>History/<CR>', { silent = true })
 map('n', '<F9>',  '<Cmd>History:<CR>', { silent = true })
