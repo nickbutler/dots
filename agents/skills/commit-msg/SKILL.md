@@ -41,7 +41,7 @@ Generate a focused commit message from current git state, then let the user deci
    EOF
    )"
    ```
-   Then confirm success with `git log --oneline -1`.
+   Then confirm success with `git log --oneline -1`. If `.git/NEXT_COMMITMSG` exists, truncate it (`: > .git/NEXT_COMMITMSG`) so the template starts empty next time — a post-commit hook in `~/.config/git/template/hooks/` does this automatically in repos initialized from the template, but truncating here covers older repos that pre-date it.
 
    **Save to NEXT_COMMITMSG path:**
    Write the file with this exact format — the sentinel on line 1, the message starting on line 2 with no blank line between them:
