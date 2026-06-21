@@ -133,6 +133,8 @@ Parameters use `{curly_braces}`.
 
 **CLI** — commands are subcommand-and-flags only; path arguments go in a separate `at path "{path}"` clause. Values go in step text, not fixture names — step definitions stay generic and parameterised.
 
+When a scenario needs to reference the per-test temp directory inside a command string or a path argument, write the literal token `{tmp}` in the feature file — e.g. `When I run command "init {tmp}/workspace"`. The step definition is responsible for substituting `{tmp}` with the actual `tmp_path` (or framework equivalent) at runtime. This keeps feature files portable across environments and free of absolute paths, while letting step text remain self-describing. Bare relative paths in non-command step text (e.g. `the directory "workspace/raw"`) are resolved against `tmp_path` directly by the step definition — no `{tmp}` prefix needed there.
+
 | Step | Category | Notes |
 |---|---|---|
 | `I run command "{command}"` | Invocation | Subcommand and flags only, e.g. `"init"`, `"collect --all"` |
