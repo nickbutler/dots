@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(.env)",
+      "Read(.biome)",
+      "Read(**/*.pem)",
+      "Read(**/secrets*)",
+      "Bash(cat .env*)",
+      "Bash(cat .biome*)",
+      "Bash(env*)"
+    ],
+    "defaultMode": "auto"
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "/usr/bin/python3 ~/.claude/statusline.py",
+    "padding": 0
+  },
+  "effortLevel": "high",
+  "theme": "dark-ansi",
+  "skipAutoPermissionPrompt": true,
+  "model": "opus"
+}
