@@ -3,11 +3,12 @@
 
 Reads the status-line JSON payload on stdin and prints a single line:
 
-    Opus 4.8 · [████████░░░░] 66% ctx · 5h [███░░░░░░░░░] 24% · 7d [████░] 41% · $0.42
+    Opus 4.8 · [████████░░░░] 66% 132k/200k ctx · 5h [███░░░░░░░░░] 24% · 7d [████░] 41% · $0.42
 
 - model:  model.display_name
-- ctx:    context-window usage bar + percentage, from the pre-calculated
-          context_window.used_percentage (matches /context).
+- ctx:    context-window usage bar + percentage + raw tokens (used/total in
+          compact "k" notation), from context_window.used_percentage,
+          context_window.total_input_tokens, and context_window.context_window_size.
 - 5h/7d:  rate-limit window usage from rate_limits.{five_hour,seven_day}.
           Only present for Claude.ai Pro/Max after the first API response, and
           each window can be independently absent — shown only when available.
@@ -54,8 +55,20 @@ def until(resets_at: float | None) -> str:
     return f" {DIM}{mins}m{RESET}"
 
 
-def gauge(pct: float, label: str, resets_at: float | None = None) -> str:
-    return f"{bar(pct)} {pct:.0f}% {DIM}{label}{RESET}{until(resets_at)}"
+def compact_tokens(n: int) -> str:
+    """Format a token count compactly: 132000 → '132k', 1500000 → '1.5M'."""
+    if n >= 1_000_000:
+        val = n / 1_000_000
+        return f"{val:.1f}M" if val % 1 else f"{int(val)}M"
+    if n >= 1_000:
+        val = n / 1_000
+        return f"{val:.1f}k" if val % 1 else f"{int(val)}k"
+    return str(n)
+
+
+def gauge(pct: float, label: str, resets_at: float | None = None, tokens: str | None = None) -> str:
+    token_part = f" {DIM}{tokens}{RESET}" if tokens else ""
+    return f"{bar(pct)} {pct:.0f}%{token_part} {DIM}{label}{RESET}{until(resets_at)}"
 
 
 def main() -> None:
@@ -67,8 +80,14 @@ def main() -> None:
     model = (data.get("model") or {}).get("display_name", "Claude")
     parts = [f"{BOLD}{CYAN}{model}{RESET}"]
 
-    ctx_pct = (data.get("context_window") or {}).get("used_percentage")
-    parts.append(gauge(float(ctx_pct or 0), "ctx"))
+    ctx = data.get("context_window") or {}
+    ctx_pct = ctx.get("used_percentage")
+    ctx_used = ctx.get("total_input_tokens")
+    ctx_total = ctx.get("context_window_size")
+    tokens_str: str | None = None
+    if ctx_used is not None and ctx_total:
+        tokens_str = f"{compact_tokens(int(ctx_used))}/{compact_tokens(int(ctx_total))}"
+    parts.append(gauge(float(ctx_pct or 0), "ctx", tokens=tokens_str))
 
     rate = data.get("rate_limits") or {}
     for key, label in (("five_hour", "5h"), ("seven_day", "7d")):
