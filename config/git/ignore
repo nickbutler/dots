@@ -34,13 +34,16 @@ metals.sbt
 *.sw[pon]
 .*.env
 .DS_Store
+.aider*
 .biome
 .cap_tasks~
 .claude
 .conda-env
 .env
+.mcp.json
 .notes.md
 .python-version
+.repowise
 .ruby-version
 .sass-cache
 .solargraph.yml
