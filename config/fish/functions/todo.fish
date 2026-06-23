@@ -12,5 +12,6 @@ function todo
     end
   end
 
-  nvim --cmd "set rtp+=$TODO_RTP" -- $TODO_FILE
+  nvim --cmd "set rtp+=$TODO_RTP" +'normal!GzzM{' -- $TODO_FILE
+
 end
