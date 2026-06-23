@@ -1,0 +1,5 @@
+#!/bin/sh
+# Clear NEXT_COMMITMSG after a successful commit so the template starts empty
+# for the next commit. Paired with commit.template = .git/NEXT_COMMITMSG.
+git_dir=$(git rev-parse --git-dir)
+: > "$git_dir/NEXT_COMMITMSG"
