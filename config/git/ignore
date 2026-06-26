@@ -48,8 +48,10 @@ metals.sbt
 .sass-cache
 .solargraph.yml
 .ssh
+.slingshot
 .todo
 .vimrc_local
+.vscode
 .~*#
 custom_plan.rb
 dump.rdb
