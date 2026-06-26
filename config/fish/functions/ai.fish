@@ -1,19 +1,40 @@
 function ai
-  if test (count $argv) -eq 0
-    echo "Usage: ai <question>"
-    echo "Example: ai what is the meaning of life, the universe and everything?"
+  argparse f/fresh -- $argv
+
+  # Capture piped stdin if present
+  set stdin_content ""
+  if not isatty stdin
+    read -z stdin_content
+  end
+
+  if test -z "$stdin_content" -a (count $argv) -eq 0
+    echo "Usage: ai [--fresh] <question>"
+    echo "       <command> | ai [--fresh] <question>"
+    echo "Example: ai what is the meaning of life"
+    echo "         cat error.log | ai explain this error"
     return 1
   end
 
   set cache_dir ~/.cache/fish-ai
   mkdir -p $cache_dir
 
-  set query (string join " " $argv)
+  # Build query from stdin + args
+  set -l parts
+  if test -n "$stdin_content"
+    set -a parts $stdin_content
+  end
+  set -l arg_str (string join " " $argv)
+  if test -n "$arg_str"
+    set -a parts $arg_str
+  end
+  set query (string join "\n\n" $parts)
+
   set hash (echo $query | md5)
   set cache_file $cache_dir/$hash
 
-  if test -f $cache_file
-    if type -q glow; glow $cache_file; else; cat $cache_file; end
+  if not set -q _flag_fresh; and test -f $cache_file
+    echo Oh, I remember this one...
+    cat $cache_file | glow
     return 0
   end
 
@@ -22,7 +43,7 @@ function ai
   claude --model claude-haiku-4-5 \
          --effort low \
          --system-prompt $sysprompt \
-         --print $query \
+         --print "$query" \
   | tee $cache_file \
   | if type -q glow; glow; else; cat; end
 end
