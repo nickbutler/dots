@@ -123,6 +123,28 @@ function symlink_others
   test $any -eq 1; and echo
 end
 
+function symlink_agents
+  echo "Agent configs:"
+  set -l source (realpath $dotfile_dir/agents/AGENTS.md)
+  set -l agents claude ~/.claude/AGENTS.md \
+                codex ~/.codex/AGENTS.md \
+                pi ~/.pi/agent/AGENTS.md \
+                omp ~/.omp/agent/AGENTS.md
+  for i in (seq 1 2 (count $agents))
+    set -l name $agents[$i]
+    set -l dest $agents[(math $i + 1)]
+    set -l dir (dirname $dest)
+    if test -d $dir
+      echo -n "  $name: "
+      symlink_one $source $dest
+    else
+      echo -n "  $name: "
+      echo -s (set_color yellow) "Skipped (not configured)." (set_color normal)
+    end
+  end
+  echo
+end
+
 function offer_install
   set -l manager
   if type brew > /dev/null 2>&1
@@ -224,6 +246,7 @@ end
 
 symlink_configs
 symlink_bin
+symlink_agents
 symlink_others
 
 # Show anything still missing after potential install
