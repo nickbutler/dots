@@ -182,29 +182,33 @@ function offer_install
 end
 
 # Check for updates
-echo "Checking for updates..."
-git fetch --quiet origin main
-set count (git rev-list HEAD..origin/main --count)
+function check_updates
+  echo "Checking for updates..."
+  git fetch --quiet origin main
+  set count (git rev-list HEAD..origin/main --count)
 
-if test $count -gt 0
-  echo -s (set_color cyan) "$count new commit"(test $count -ne 1; and echo s)(set_color normal) " on main:"
-  echo
-  git log HEAD..origin/main --oneline --no-decorate | while read -l line
-    echo "  $line"
-  end
-  echo
-  read -n1 -P "Pull updates? [y/N] " choice < /dev/tty
-  echo
-  if string match -qi y $choice
-    git pull origin main
+  if test $count -gt 0
+    echo -s (set_color cyan) "$count new commit"(test $count -ne 1; and echo s)(set_color normal) " on main:"
     echo
+    git log HEAD..origin/main --oneline --no-decorate | while read -l line
+      echo "  $line"
+    end
+    echo
+    read -n1 -P "Pull updates? [y/N] " choice < /dev/tty
+    echo
+    if string match -qi y $choice
+      git pull origin main
+      echo
+    else
+      echo "Skipped."
+      echo
+    end
   else
-    echo "Skipped."
-    echo
+    echo "Already up to date."
   end
-else
-  echo "Already up to date."
 end
+
+check_updates
 
 # Detect missing programs before linking
 set -g missing_programs
