@@ -1,5 +1,7 @@
 # Working with Nick
 
+Be extremely concise unless otherwise instructed. Sacrifice grammar for the sake of concision.
+
 ## Development philosophy
 
 ### Test-driven development
