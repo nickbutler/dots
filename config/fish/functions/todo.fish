@@ -8,7 +8,7 @@ function todo
     set TODO_FILE $argv[1]
 
     if not string match -q '*/*' -- $TODO_FILE; and not string match -q '*.todo.md' -- $TODO_FILE
-      set TODO_FILE $TODO_HOME/$TODO_FILE.todo
+      set TODO_FILE $TODO_HOME/$TODO_FILE.todo.md
     end
   end
 
