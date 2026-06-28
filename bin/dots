@@ -126,7 +126,7 @@ end
 function symlink_agents
   echo "Agent configs:"
   set -l source (realpath $dotfile_dir/agents/AGENTS.md)
-  set -l agents claude ~/.claude/AGENTS.md \
+  set -l agents claude ~/.claude/CLAUDE.md \
                 codex ~/.codex/AGENTS.md \
                 pi ~/.pi/agent/AGENTS.md \
                 omp ~/.omp/agent/AGENTS.md
