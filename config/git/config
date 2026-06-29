@@ -61,7 +61,6 @@
   conflictstyle = diff3
 [commit]
   gpgSign = true
-  template = .git/NEXT_COMMITMSG
 [status]
   showUntrackedFiles = all
 [tig]

@@ -348,6 +348,14 @@ vim.api.nvim_create_autocmd('FileType', {
   callback = function()
     vim.opt_local.number = false
     vim.opt_local.relativenumber = false
+
+    -- A coding agent may leave a suggested message in NEXT_COMMITMSG next to
+    -- this COMMIT_EDITMSG buffer (git puts both in the right per-worktree
+    -- gitdir). If present, prepend it to the top of the buffer.
+    local next_msg = vim.fn.expand('%:p:h') .. '/NEXT_COMMITMSG'
+    if vim.fn.filereadable(next_msg) == 1 then
+      vim.cmd('0read ' .. vim.fn.fnameescape(next_msg))
+    end
   end,
 })
 
