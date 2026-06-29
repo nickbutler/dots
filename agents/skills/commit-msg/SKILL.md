@@ -1,13 +1,13 @@
 ---
 name: commit-msg
-description: Generate a git commit message from the current staged/unstaged changes and prompt to either commit immediately or save to .git/NEXT_COMMITMSG. Use when the user types /commit-msg or asks you to generate a commit message, draft a commit, or write a commit suggestion.
+description: Generate a git commit message from the current staged/unstaged changes and save it to .git/NEXT_COMMITMSG to pre-populate the next manual commit. Use when the user types /commit-msg or asks you to generate a commit message, draft a commit, or write a commit suggestion.
 argument-hint: [scope]
 allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git add:*), Bash(git commit:*)
 ---
 
 # Commit Message Generator
 
-Generate a focused commit message from current git state, then let the user decide whether to commit immediately or stage the suggestion for their next manual commit.
+Generate a focused commit message from current git state and write it to `.git/NEXT_COMMITMSG` so it pre-populates the user's next manual commit. Never commit — only write the suggestion.
 
 ## Steps
 
@@ -16,6 +16,8 @@ Generate a focused commit message from current git state, then let the user deci
    - `git diff HEAD` (full diff of staged and unstaged changes)
    - `git log --oneline -10` (recent history to match tone and style)
 
+   **If any files are staged, the message must describe only the staged changes.** Use `git diff --cached` as the source of truth and ignore unstaged changes when drafting. Only fall back to the full working tree (`git diff HEAD`) when nothing is staged.
+
 2. **Draft the commit message** — follow these rules:
    - First line: imperative mood, ≤72 chars, no trailing period, no scope prefix unless an argument was passed to the skill
    - If an argument was passed (e.g. `/commit-msg auth`), prefix the subject with `scope: ` (e.g. `auth: add JWT refresh logic`)
@@ -23,41 +25,18 @@ Generate a focused commit message from current git state, then let the user deci
    - No `Co-Authored-By` or other trailers — the user adds those manually if wanted
    - Match the capitalization and style of recent commits in the log
 
-3. **Present the message** — show the full proposed commit message in a code block so the user can read it clearly.
-
-4. **Ask the user** what to do next — offer exactly two options:
-   - **Commit now**: stage any unstaged changes with `git add -u`, then commit with the message
-   - **Save to NEXT_COMMITMSG**: write the message to `.git/NEXT_COMMITMSG` in the sentinel format (see below) so it pre-populates the next manual commit
-
-5. **Execute** the chosen path:
-
-   **Commit now path:**
-   ```bash
-   git add -u
-   git commit -m "$(cat <<'EOF'
-   <subject line>
-
-   <optional body>
-   EOF
-   )"
+3. **Write the message to `.git/NEXT_COMMITMSG`** — do this without prompting.
    ```
-   Then confirm success with `git log --oneline -1`. If `.git/NEXT_COMMITMSG` exists, truncate it (`: > .git/NEXT_COMMITMSG`) so the template starts empty next time — a post-commit hook in `~/.config/git/template/hooks/` does this automatically in repos initialized from the template, but truncating here covers older repos that pre-date it.
-
-   **Save to NEXT_COMMITMSG path:**
-   Write the file with this exact format — the sentinel on line 1, the message starting on line 2 with no blank line between them:
-   ```
-   GENERATED MESSAGE
    <subject line>
 
    <optional body>
    ```
-   The sentinel `GENERATED MESSAGE` is a safety net: git aborts the commit if the user does not delete that line, preventing accidental use of an unreviewed suggestion.
 
-   Confirm by telling the user the message has been saved and they can commit via `git commit` (which will use the template).
+4. **Confirm** — show the proposed message in a code block and tell the user it's been written; they can commit via `git commit`, which reads it into the buffer.
 
 ## Notes
 
 - If there are no staged or unstaged changes, report that immediately and stop.
 - If the diff is large (many files or many hunks), summarize the intent rather than listing every file — keep the subject line crisp.
 - Never add `Co-Authored-By: Claude` or any AI attribution trailers unless the user explicitly asks.
-- This skill never commits without the user choosing the "Commit now" path explicitly in step 4.
+- This skill never commits — it only writes the suggestion to `.git/NEXT_COMMITMSG`.
