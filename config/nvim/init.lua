@@ -355,6 +355,13 @@ vim.api.nvim_create_autocmd('FileType', {
     local next_msg = vim.fn.expand('%:p:h') .. '/NEXT_COMMITMSG'
     if vim.fn.filereadable(next_msg) == 1 then
       vim.cmd('0read ' .. vim.fn.fnameescape(next_msg))
+      -- Consume it once the commit buffer is saved (i.e. the commit goes
+      -- through); aborting without writing keeps it for next time.
+      vim.api.nvim_create_autocmd('BufWritePost', {
+        buffer = 0,
+        once = true,
+        callback = function() vim.fn.delete(next_msg) end,
+      })
     end
   end,
 })
