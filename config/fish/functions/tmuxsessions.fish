@@ -1,7 +1,7 @@
 function tmuxsessions
   argparse 'd/debug' -- $argv
 
-  set -l sessions (tmux list-sessions -F '#{session_name}')
+  set -l sessions (tmux list-sessions -F '#{session_created} #{session_name}' | sort -n | string replace -r '^\d+ ' '')
   set -l current (tmux display-message -p '#{session_name}')
   # set -l opts '-T "#[align=centre]Sessions" -x C -y C'
   set -l opts '-T "#[align=centre]New Window" -x 0 -y W'

@@ -1,6 +1,6 @@
 function tmuxsessionlist
   set -l current $argv[1]
-  set -l sessions (tmux list-sessions -F '#{session_name}')
+  set -l sessions (tmux list-sessions -F '#{session_created} #{session_name}' | sort -n | string replace -r '^\d+ ' '')
   for name in $sessions
     if [ "$name" = "$current" ]
       printf '#[range=user|session=%s]#[fg=cyan,bg=black]#[fg=#2e3440,bg=cyan]#[fg=black,bg=cyan] %s #[fg=cyan,bg=#2e3440] #[norange]' $name $name
