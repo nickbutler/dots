@@ -13,7 +13,6 @@ set -g status-left-length "100"
 set -g status-right-length "100"
 set -g status-left-style NONE
 set -g status-right-style NONE
-set -g status-left "#[fg=black,bg=blue,bold] #S #[fg=blue,bg=#2e3440,nobold,nounderscore,noitalics]"
 set -g status-right "#[fg=#abb1bb,bg=#2e3440]#[fg=black,bg=#abb1bb] #{pane_current_path} #[fg=blue,bg=#abb1bb,nobold,nounderscore,noitalics]#[fg=black,bg=blue,bold] #h "
 setw -g window-status-activity-style "underscore,fg=#7e8188,bg=black"
 setw -g window-status-separator ""
