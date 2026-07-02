@@ -5,7 +5,7 @@
       "src": "https://github.com/jiangmiao/auto-pairs"
     },
     "barbar.nvim": {
-      "rev": "a4bef5b4fc1f064f2f673172252028eae18191c9",
+      "rev": "337ecfadb8bf005050990bf2f624dc4fc828dabd",
       "src": "https://github.com/romgrk/barbar.nvim"
     },
     "bats.vim": {
@@ -13,11 +13,11 @@
       "src": "https://github.com/aliou/bats.vim"
     },
     "blink.cmp": {
-      "rev": "35e3923a09ff3db150ceff80004befcbbfa071a0",
+      "rev": "bda905a4bf1b3edfa708b0be193b8c63d8620c96",
       "src": "https://github.com/saghen/blink.cmp"
     },
     "blink.lib": {
-      "rev": "f29d8bac6549bc1e7d699c83f680823d7def98bd",
+      "rev": "5876dd95deeb70aadbe9f1c0b7117a135061cdac",
       "src": "https://github.com/saghen/blink.lib"
     },
     "colorizer": {
@@ -25,7 +25,7 @@
       "src": "https://github.com/chrisbra/colorizer"
     },
     "csv.vim": {
-      "rev": "ab776a6266593e9e0d8643cdb7e577f81c0eab7d",
+      "rev": "8977f6890d235a6ba9948b63ff700d414c84c344",
       "src": "https://github.com/chrisbra/csv.vim"
     },
     "earthly.vim": {
@@ -33,19 +33,19 @@
       "src": "https://github.com/earthly/earthly.vim"
     },
     "fzf": {
-      "rev": "263eb4732fc6268f9fb35cffb634903ea8e2a26b",
+      "rev": "9e2856559d50637df482b8598fd7b35b2d746485",
       "src": "https://github.com/junegunn/fzf"
     },
     "fzf.vim": {
-      "rev": "b9624aa012ddcbae9e79964bfd30cc1fbe3cf263",
+      "rev": "d2a59a992a2455f609c0fde2ebd84427ea8f919a",
       "src": "https://github.com/junegunn/fzf.vim"
     },
     "gitsigns.nvim": {
-      "rev": "dd3f588bacbeb041be6facf1742e42097f62165d",
+      "rev": "2038c666bd9d8a0b7349a0b6ee00dc83104b9ecf",
       "src": "https://github.com/lewis6991/gitsigns.nvim"
     },
     "lualine.nvim": {
-      "rev": "131a558e13f9f28b15cd235557150ccb23f89286",
+      "rev": "221ce6b2d999187044529f49da6554a92f740a96",
       "src": "https://github.com/nvim-lualine/lualine.nvim"
     },
     "nightfox.nvim": {
@@ -61,15 +61,15 @@
       "src": "https://github.com/brenoprata10/nvim-highlight-colors"
     },
     "nvim-surround": {
-      "rev": "2e93e154de9ff326def6480a4358bfc149d5da2c",
+      "rev": "8b47db616ef658b8fc27e61db2896aa2f40134de",
       "src": "https://github.com/kylechui/nvim-surround"
     },
     "nvim-web-devicons": {
-      "rev": "2795c26c916bb3c57dde308b82be51971fa92747",
-      "src": "https://github.com/kyazdani42/nvim-web-devicons"
+      "rev": "dfbfaa967a6f7ec50789bead7ef87e336c1fa63c",
+      "src": "https://github.com/nvim-tree/nvim-web-devicons"
     },
     "outline.nvim": {
-      "rev": "c293eb56db880a0539bf9d85b4a27816960b863e",
+      "rev": "2a132953b944561d45b52e4541ebfff71934a742",
       "src": "https://github.com/hedyhli/outline.nvim"
     },
     "plenary.nvim": {
@@ -141,7 +141,7 @@
       "src": "https://github.com/hashivim/vim-terraform"
     },
     "vim-tig": {
-      "rev": "052d18979562ecbe9ff0e3aee97ea3759ceb04e8",
+      "rev": "ef7f2a2a4e2c968220644b1e8e289e77f7b70115",
       "src": "https://github.com/nickbutler/vim-tig"
     },
     "vim-tmux-navigator": {
