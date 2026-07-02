@@ -70,9 +70,7 @@ When there are genuinely valid trade-offs, present 2–3 options with the key di
 Silent on routine changes — I can read the code. Flag anything non-obvious: a surprising constraint, a judgment call, a trade-off you made without asking. One sentence is usually enough.
 
 ### Commit messages
-After each logical change, write a short suggested commit message to `.git/NEXT_COMMITMSG` at the repo root (overwriting any prior suggestion). My `commit.template` is configured globally to point at that file, so the message pre-populates when I commit via tig or `git commit`. Don't commit — just write the file and mention briefly that you've updated it.
-
-**Always prefix the suggestion with a literal first line `GENERATED MESSAGE`, with the actual message starting on the next line (no blank line between them).** I delete that sentinel line to confirm I want to use the suggestion. If I leave it in place, git's "you did not edit the message" check aborts the commit — which is the intended safety net.
+After each logical change, use the /commit-msg skill and write a short suggested commit message.
 
 ### API changes
 After any change to an API endpoint, show httpie examples for the affected routes.
@@ -115,3 +113,5 @@ Project version lives in exactly one place. For Python, that's `pyproject.toml` 
 **No secrets in code.** Always read credentials and API keys from environment variables. Never hardcode them.
 
 **Validate at boundaries only.** Validate input at API/CLI entry points. Trust internal code and framework guarantees — don't add defensive checks for scenarios that can't happen.
+
+@RTK.md
