@@ -3,21 +3,23 @@
 
 Reads the status-line JSON payload on stdin and prints a single line:
 
-    Opus 4.8 · [████████░░░░] 66% 132k/200k ctx · 5h [███░░░░░░░░░] 24% · 7d [████░] 41% · $0.42
+    Fable 5 · worktree-name/branch-name · [ctx ███████░░░░░ 61% 608.9k/1M] · [5h █████░░░░░░░ 38% 52m] · [7d ██░░░░░░░░░░ 16% 5d19h] · $207.95 · ~/code/projects/sapphire
 
-- model:  model.display_name
-- ctx:    context-window usage bar + percentage + raw tokens (used/total in
-          compact "k" notation), from context_window.used_percentage,
-          context_window.total_input_tokens, and context_window.context_window_size.
-- 5h/7d:  rate-limit window usage from rate_limits.{five_hour,seven_day}.
-          Only present for Claude.ai Pro/Max after the first API response, and
-          each window can be independently absent — shown only when available.
-- cost:   session total cost (cost.total_cost_usd), shown when non-zero.
+- model:  model.display_name (first)
+- branch: worktree-name/branch-name; worktree prefix omitted when not in a worktree
+          session. Branch resolved via worktree.branch → workspace.git_worktree →
+          git symbolic-ref fallback.
+- ctx:    bracketed context-window bar + percent + used/total tokens.
+- 5h/7d:  bracketed rate-limit windows with time remaining; each omitted when absent.
+- cost:   session total (cost.total_cost_usd); omitted when absent or zero.
+- cwd:    current directory with ~ abbreviation (last).
 """
 
 from __future__ import annotations
 
 import json
+import os
+import subprocess
 import sys
 import time
 
@@ -44,15 +46,15 @@ def until(resets_at: float | None) -> str:
         return ""
     secs = int(resets_at - time.time())
     if secs <= 0:
-        return " 0m"
+        return "0m"
     days, rem = divmod(secs, 86400)
     hours, rem = divmod(rem, 3600)
     mins = rem // 60
     if days:
-        return f" {DIM}{days}d{hours}h{RESET}"
+        return f"{days}d{hours}h"
     if hours:
-        return f" {DIM}{hours}h{mins}m{RESET}"
-    return f" {DIM}{mins}m{RESET}"
+        return f"{hours}h{mins}m"
+    return f"{mins}m"
 
 
 def compact_tokens(n: int) -> str:
@@ -66,9 +68,51 @@ def compact_tokens(n: int) -> str:
     return str(n)
 
 
-def gauge(pct: float, label: str, resets_at: float | None = None, tokens: str | None = None) -> str:
-    token_part = f" {DIM}{tokens}{RESET}" if tokens else ""
-    return f"{bar(pct)} {pct:.0f}%{token_part} {DIM}{label}{RESET}{until(resets_at)}"
+def compact_path(path: str) -> str:
+    """Replace $HOME prefix with ~."""
+    home = os.path.expanduser("~")
+    if path.startswith(home):
+        return "~" + path[len(home):]
+    return path
+
+
+def git_branch(cwd: str) -> str | None:
+    """Return current branch short name, or None if not in a git repo."""
+    try:
+        result = subprocess.run(
+            ["git", "-C", cwd, "--no-optional-locks", "symbolic-ref", "--short", "HEAD"],
+            capture_output=True,
+            text=True,
+            timeout=2,
+        )
+        if result.returncode == 0:
+            return result.stdout.strip()
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+    return None
+
+
+def ctx_segment(ctx: dict) -> str | None:
+    """Return '[ctx <bar> <pct>% <used>/<total>]' or None if no data."""
+    pct = ctx.get("used_percentage")
+    if pct is None:
+        return None
+    used = ctx.get("total_input_tokens")
+    total = ctx.get("context_window_size")
+    tokens_part = ""
+    if used is not None and total:
+        tokens_part = f" {DIM}{compact_tokens(int(used))}/{compact_tokens(int(total))}{RESET}"
+    return f"{DIM}[{RESET}ctx {bar(float(pct))} {float(pct):.0f}%{tokens_part}{DIM}]{RESET}"
+
+
+def rate_segment(label: str, window: dict) -> str | None:
+    """Return '[<label> <bar> <pct>% <time-remaining>]' or None if no data."""
+    pct = window.get("used_percentage")
+    if pct is None:
+        return None
+    time_str = until(window.get("resets_at"))
+    time_part = f" {DIM}{time_str}{RESET}" if time_str else ""
+    return f"{DIM}[{RESET}{label} {bar(float(pct))} {float(pct):.0f}%{time_part}{DIM}]{RESET}"
 
 
 def main() -> None:
@@ -77,30 +121,52 @@ def main() -> None:
     except (json.JSONDecodeError, ValueError):
         data = {}
 
+    sep = f" {DIM}·{RESET} "
+    parts: list[str] = []
+
+    # 1. Model
     model = (data.get("model") or {}).get("display_name", "Claude")
-    parts = [f"{BOLD}{CYAN}{model}{RESET}"]
+    parts.append(f"{BOLD}{CYAN}{model}{RESET}")
 
-    ctx = data.get("context_window") or {}
-    ctx_pct = ctx.get("used_percentage")
-    ctx_used = ctx.get("total_input_tokens")
-    ctx_total = ctx.get("context_window_size")
-    tokens_str: str | None = None
-    if ctx_used is not None and ctx_total:
-        tokens_str = f"{compact_tokens(int(ctx_used))}/{compact_tokens(int(ctx_total))}"
-    parts.append(gauge(float(ctx_pct or 0), "ctx", tokens=tokens_str))
+    # 2. worktree-name/branch-name (or just branch-name)
+    cwd = data.get("cwd") or (data.get("workspace") or {}).get("current_dir", "")
+    worktree = data.get("worktree") or {}
+    worktree_name = worktree.get("name")
+    branch = worktree.get("branch")
+    if not branch:
+        branch = (data.get("workspace") or {}).get("git_worktree")
+    if not branch and cwd:
+        branch = git_branch(cwd)
 
+    if worktree_name or branch:
+        if worktree_name and branch:
+            location = f"{worktree_name}/{branch}"
+        else:
+            location = worktree_name or branch
+        parts.append(f"{BOLD}{location}{RESET}")
+
+    # 3. Context window
+    seg = ctx_segment(data.get("context_window") or {})
+    if seg:
+        parts.append(seg)
+
+    # 4 & 5. Rate limits
     rate = data.get("rate_limits") or {}
     for key, label in (("five_hour", "5h"), ("seven_day", "7d")):
-        window = rate.get(key) or {}
-        pct = window.get("used_percentage")
-        if pct is not None:
-            parts.append(gauge(float(pct), label, window.get("resets_at")))
+        seg = rate_segment(label, rate.get(key) or {})
+        if seg:
+            parts.append(seg)
 
+    # 6. Cost
     cost = (data.get("cost") or {}).get("total_cost_usd")
     if isinstance(cost, (int, float)) and cost > 0:
         parts.append(f"${cost:.2f}")
 
-    sys.stdout.write(f" {DIM}·{RESET} ".join(parts))
+    # 7. cwd
+    if cwd:
+        parts.append(f"{DIM}{compact_path(cwd)}{RESET}")
+
+    sys.stdout.write(sep.join(parts))
 
 
 if __name__ == "__main__":
