@@ -50,6 +50,9 @@
   soft = "reset --soft HEAD^"
   hard = "reset --hard"
   mad = "!git checkout main && git merge - && git branch -d @{-1}"
+  batch-status = "!git-batch status"
+  batch-pull = "!git-batch pull"
+  batch-push = "!git-batch push"
 [credential]
   helper = osxkeychain
 [diff]

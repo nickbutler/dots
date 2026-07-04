@@ -1,0 +1,70 @@
+#!/usr/bin/env fish
+# Run a git command across every repo found recursively under the current
+# directory. Used by the batch-status / batch-pull / batch-push aliases.
+#
+# Usage: git-batch <status|pull|push> [path...]
+# pull/push accept repo paths; with none given, every repo under the
+# current directory is used.
+
+set cmd $argv[1]
+set paths $argv[2..]
+
+if not contains -- "$cmd" status pull push
+  echo "usage: git-batch <status|pull|push>" >&2
+  exit 1
+end
+
+# Git runs shell aliases from the repo toplevel; GIT_PREFIX restores the
+# directory the user actually invoked the command from.
+if test -n "$GIT_PREFIX"
+  cd "$GIT_PREFIX"
+end
+
+if test (count $paths) -gt 0
+  set repos $paths
+else
+  # -name .git matches both dirs (repos) and files (worktrees/submodules);
+  # -prune stops find descending inside .git itself.
+  set repos (find . -name node_modules -prune -o -name .git -prune -print | sort | path dirname)
+end
+
+if test "$cmd" = status
+  # Fetch all repos in parallel so ahead/behind is current
+  for repo in $repos
+    git -C $repo fetch -q 2>/dev/null &
+  end
+  wait
+
+  # One line per out-of-sync repo, e.g. main...origin/main [ahead 1]
+  set in_sync 0
+  for repo in $repos
+    set line (git -C $repo status -sb 2>/dev/null | head -1 | string replace '## ' '')
+    if string match -rq '\[' -- "$line"
+      set_color --bold blue
+      echo -n "$repo "
+      set_color normal
+      echo $line
+    else
+      set in_sync (math $in_sync + 1)
+    end
+  end
+  echo "$in_sync repos in sync"
+  exit
+end
+
+for repo in $repos
+  switch $cmd
+    case pull
+      set_color --bold blue
+      echo $repo
+      set_color normal
+      git -C $repo pull
+      echo
+    case push
+      set_color --bold blue
+      echo $repo
+      set_color normal
+      git -C $repo push
+      echo
+  end
+end
