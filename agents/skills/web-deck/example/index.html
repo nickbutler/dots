@@ -1,0 +1,2442 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Web Deck — a presentation that is just a web page</title>
+<style>
+/* ============================================================
+   DESIGN TOKENS — the only place visual identity lives.
+   Swap this block (or generate it from a design system) to
+   rebrand the entire deck.
+   ============================================================ */
+:root {
+  --bg: #05070d;
+  --surface: #0c1220;
+  --surface-2: #111a2e;
+  --line: #1e2a44;
+  --text: #e9edf5;
+  --muted: #94a0b8;
+  --faint: #55617c;
+  --accent: #64a2ff;        /* sapphire */
+  --accent-soft: #64a2ff22;
+  --accent-2: #f5c04e;      /* warm counterpoint, used sparingly */
+  --font-body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --radius: 1rem;
+  --pad: clamp(2rem, calc(6 * var(--vw)), 6rem);
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* viewport units as tokens — never used raw in layout rules. The
+     interactive print preview resolves vw/vh against the printer's paper
+     size, not the @page px box (same family as the media-query print
+     gotcha), so print pins these to the page's px size instead */
+  --vw: 1vw;
+  --vh: 1vh;
+  --vmax: 1vmax;
+}
+
+/* ============================================================
+   BASE — full-bleed presentation canvas, not a web page.
+   ============================================================ */
+* { box-sizing: border-box; margin: 0; }
+/* free scrolling settles on the same stops the keyboard uses: sections snap
+   to start, scrub stages snap via markers placed at the waypoint offsets */
+html { scroll-behavior: smooth; scroll-snap-type: y mandatory; }
+html.static { scroll-behavior: auto; scroll-snap-type: none; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+section {
+  position: relative;
+  min-height: calc(100 * var(--vh));
+  width: 100%;
+  display: grid;
+  /* slide anatomy: header row at the top, body fills the rest */
+  grid-template-rows: auto 1fr;
+  padding: var(--pad);
+  /* clip (not hidden): hidden creates a scroll container, which breaks
+     position: sticky for the scrub stage */
+  overflow: clip;
+  scroll-snap-align: start;
+}
+/* statement slides (hero, closing) stay vertically centered */
+section.center { grid-template-rows: none; align-content: center; }
+/* body content sits comfortably in the remaining space… */
+section > :not(header) { align-self: center; }
+/* …except grids, which stretch to use the available height */
+section > .grid { align-self: stretch; align-content: stretch; grid-auto-rows: 1fr; }
+/* decorative glow blobs — alternate corners per section */
+section::before {
+  content: "";
+  position: absolute;
+  width: calc(55 * var(--vmax)); height: calc(55 * var(--vmax));
+  border-radius: 50%;
+  filter: blur(90px);
+  background: radial-gradient(circle, var(--accent-soft), transparent 65%);
+  top: calc(-20 * var(--vmax)); left: calc(-15 * var(--vmax));
+  pointer-events: none;
+}
+section:nth-of-type(even)::before {
+  top: auto; left: auto; bottom: calc(-20 * var(--vmax)); right: calc(-15 * var(--vmax));
+  background: radial-gradient(circle, #f5c04e14, transparent 65%);
+}
+
+/* ============================================================
+   TYPOGRAPHY — heading levels govern the scale.
+   #  (deck title)     → .t1
+   ## (section title)  → .t2
+   ### (item heading)  → .t3
+   ============================================================ */
+.t1 { font-size: clamp(3.5rem, calc(9 * var(--vw)), 8rem);   font-weight: 800; letter-spacing: -0.03em; line-height: 1.0; }
+.t2 { font-size: clamp(2.2rem, calc(5 * var(--vw)), 4.5rem); font-weight: 700; letter-spacing: -0.02em; line-height: 1.05; }
+.t3 { font-size: clamp(1.05rem, calc(1.6 * var(--vw)), 1.4rem); font-weight: 600; }
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: clamp(0.7rem, calc(1 * var(--vw)), 0.85rem);
+  text-transform: uppercase; letter-spacing: 0.25em;
+  color: var(--accent);
+  margin-bottom: 1.2rem;
+}
+.lede {
+  font-size: clamp(1.1rem, calc(1.8 * var(--vw)), 1.5rem);
+  color: var(--muted);
+  max-width: 58ch;              /* line length constrained locally, never globally */
+  margin-top: 1.5rem;
+}
+.lede strong, .card p strong { color: var(--text); }
+code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 0.35em;
+  padding: 0.1em 0.4em;
+}
+kbd {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 0.4em;
+  background: var(--surface);
+  padding: 0.15em 0.55em;
+}
+
+/* ============================================================
+   COMPONENTS
+   ============================================================ */
+.card {
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: clamp(1.2rem, calc(2 * var(--vw)), 2rem);
+  backdrop-filter: blur(6px);
+}
+.card p { color: var(--muted); margin-top: 0.6rem; font-size: clamp(0.95rem, calc(1.3 * var(--vw)), 1.1rem); }
+.card ul { list-style: none; padding: 0; margin-top: 0.6rem; }
+.card li {
+  position: relative;
+  padding-left: 1.1rem;
+  margin-top: 0.4rem;
+  color: var(--muted);
+  font-size: clamp(0.85rem, calc(1.1 * var(--vw)), 1rem);
+}
+.card li::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0.55em;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
+  gap: clamp(1rem, calc(2 * var(--vw)), 1.75rem);
+  margin-top: clamp(2rem, calc(4 * var(--vh)), 4rem);
+}
+
+/* reveal-on-entry animation — replays each time the frame comes in:
+   .in is added when the element enters and removed once fully off-screen */
+.reveal {
+  opacity: 0;
+  transform: translateY(26px) scale(0.985);
+  filter: blur(10px);
+  transition: opacity 0.6s var(--ease), transform 0.6s var(--ease), filter 0.6s var(--ease);
+  transition-delay: var(--d, 0s);
+}
+.reveal.in { opacity: 1; transform: none; filter: none; }
+
+/* hero */
+.hero-hint {
+  margin-top: 3.5rem;
+  color: var(--faint);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  animation: pulse 2.4s ease-in-out infinite;
+}
+@keyframes pulse { 50% { opacity: 0.35; } }
+
+/* scrubbed sequence: tall wrapper + pinned stage */
+.scrub .stage {
+  position: sticky;
+  top: 0;
+  min-height: calc(100 * var(--vh));
+  display: grid;
+  grid-template-rows: auto 1fr;
+  padding: var(--pad);
+}
+.stage > .seq { align-self: center; }
+/* align-content: start — the base section's align-content: center applies to
+   block containers too (Chrome 123+), which would rest the sticky stage in the
+   middle of the tall wrapper instead of pinning from the top.
+   scroll-snap-align: none — the wrapper must not snap as a whole or mid-scrub
+   positions become unrestable; its .snap-marker children snap per stage. */
+.scrub { padding: 0; display: block; align-content: start; scroll-snap-align: none; }
+.snap-marker { position: absolute; left: 0; width: 1px; height: 1px; scroll-snap-align: start; }
+html.static .snap-marker { display: none; }
+.seq { margin-top: clamp(2rem, calc(5 * var(--vh)), 4rem); }
+.track {
+  height: 3px; border-radius: 2px; background: var(--line);
+  overflow: hidden;
+}
+.track .fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  transition: width 0.35s var(--ease);
+}
+.chips {
+  display: grid;
+  grid-template-columns: repeat(var(--n), 1fr);
+  gap: clamp(0.75rem, calc(1.5 * var(--vw)), 1.5rem);
+  margin-top: clamp(1rem, calc(2.5 * var(--vh)), 1.5rem);
+}
+.chip {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: clamp(0.9rem, calc(1.5 * var(--vw)), 1.4rem);
+  font-family: var(--font-mono);
+  font-size: clamp(0.85rem, calc(1.2 * var(--vw)), 1.05rem);
+  color: var(--faint);
+  transition: color 0.4s, border-color 0.4s, background 0.4s, transform 0.4s var(--ease);
+  transform: translateY(6px);
+}
+.chip.on {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+  background: var(--accent-soft);
+  transform: none;
+}
+.chip .idx { color: var(--accent); margin-right: 0.6em; }
+.blurb {
+  margin-top: clamp(1rem, calc(3.5 * var(--vh)), 2rem);
+  min-height: 2.6em;
+  max-width: 62ch;
+  font-size: clamp(1rem, calc(1.5 * var(--vw)), 1.3rem);
+  color: var(--muted);
+}
+.blurb .head { color: var(--accent); font-family: var(--font-mono); margin-right: 0.8em; }
+.blurb.swap { animation: swap 0.35s var(--ease); }
+@keyframes swap { from { opacity: 0; transform: translateY(8px); } }
+.static-stages { display: none; }
+
+/* numbers */
+.numbers-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
+  gap: clamp(1.5rem, calc(3 * var(--vw)), 3rem);
+  margin-top: clamp(2.5rem, calc(6 * var(--vh)), 5rem);
+}
+.big-num {
+  font-size: clamp(4rem, calc(10 * var(--vw)), 9rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  background: linear-gradient(120deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.big-label { color: var(--muted); margin-top: 0.5rem; font-size: clamp(1rem, calc(1.4 * var(--vw)), 1.25rem); }
+
+/* mirror (source next to rendered) */
+.mirror-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(26rem, 100%), 1fr));
+  gap: clamp(1.5rem, calc(3 * var(--vw)), 3rem);
+  margin-top: clamp(2rem, calc(4 * var(--vh)), 4rem);
+  align-items: start;
+}
+.mirror-grid pre {
+  font-family: var(--font-mono);
+  font-size: clamp(0.75rem, calc(1 * var(--vw)), 0.95rem);
+  line-height: 1.7;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: clamp(1.2rem, calc(2 * var(--vw)), 2rem);
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+.mirror-grid pre .md-h { color: var(--accent); }
+.mirror-grid pre .md-cfg { color: var(--accent-2); }
+
+/* ---- layout library ---- */
+
+/* media: text + image */
+.media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(24rem, 100%), 1fr));
+  gap: clamp(2rem, calc(4 * var(--vw)), 4rem);
+  align-items: center;
+}
+.media-grid.flip > :first-child { order: 2; }
+.media-frame {
+  aspect-ratio: 16 / 9;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface);
+}
+.media-frame img, .media-frame svg { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* compact cards for dense grids (@cols >= 4) */
+.card--sm { padding: clamp(0.8rem, calc(1.2 * var(--vw)), 1.2rem); }
+.card--sm .t3 { font-size: clamp(0.95rem, calc(1.3 * var(--vw)), 1.15rem); }
+.card--sm p { font-size: clamp(0.8rem, calc(1 * var(--vw)), 0.95rem); margin-top: 0.3rem; }
+
+/* diagram: linear flow of nodes */
+.flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: clamp(0.6rem, calc(1.2 * var(--vw)), 1.2rem);
+  margin-top: clamp(2rem, calc(4 * var(--vh)), 4rem);
+}
+.flow .node { flex: 1 1 9rem; }
+.node-head { font-family: var(--font-mono); font-size: clamp(0.85rem, calc(1.1 * var(--vw)), 1rem); color: var(--accent); }
+.flow .node p { font-size: clamp(0.8rem, calc(1 * var(--vw)), 0.95rem); }
+.flow-arrow { align-self: center; color: var(--faint); font-size: clamp(1.2rem, calc(2 * var(--vw)), 1.8rem); user-select: none; }
+
+/* timeline: gantt-like bars on a unit grid */
+.timeline { margin-top: clamp(2rem, calc(4 * var(--vh)), 4rem); }
+.tl-row {
+  display: grid;
+  grid-template-columns: clamp(8rem, calc(16 * var(--vw)), 13rem) 1fr;
+  align-items: center;
+  margin-top: 0.8rem;
+}
+.tl-label { font-size: clamp(0.85rem, calc(1.2 * var(--vw)), 1rem); color: var(--muted); padding-right: 1rem; }
+.tl-labels {
+  display: grid;
+  grid-template-columns: repeat(var(--l), 1fr);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--faint);
+}
+.tl-track {
+  position: relative;
+  height: clamp(1.6rem, calc(3.5 * var(--vh)), 2.1rem);
+  border-radius: 0.45rem;
+  background-image: repeating-linear-gradient(to right, var(--line) 0 1px, transparent 1px calc(100% / var(--u)));
+}
+.tl-bar {
+  position: absolute;
+  top: 0.2rem; bottom: 0.2rem;
+  border-radius: 0.35rem;
+  background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--accent-2)));
+  display: flex;
+  align-items: center;
+  padding: 0 0.6rem;
+  /* bars extend left → right when the frame comes in (row inherits --d) */
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.7s var(--ease);
+  transition-delay: calc(var(--d, 0s) + 0.2s);
+}
+.tl-row.in .tl-bar { transform: none; }
+.tl-bar span {
+  font-size: 0.72rem;
+  color: var(--bg);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* label fades in once the bar has mostly grown, hiding the scale squish */
+  opacity: 0;
+  transition: opacity 0.3s;
+  transition-delay: calc(var(--d, 0s) + 0.75s);
+}
+.tl-row.in .tl-bar span { opacity: 1; }
+html.static .tl-bar { transform: none; transition: none; }
+html.static .tl-bar span { opacity: 1; transition: none; }
+
+/* funnel: centered narrowing stages, width proportional to value */
+.funnel {
+  display: grid;
+  gap: clamp(0.5rem, calc(1.2 * var(--vh)), 0.9rem);
+  justify-items: center;
+  margin-top: clamp(2rem, calc(4 * var(--vh)), 4rem);
+}
+.fun-row { width: calc(var(--w) * 1%); min-width: 14rem; }
+.fun-bar {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 0.7rem;
+  padding: clamp(0.7rem, calc(1.6 * var(--vh)), 1.1rem) 1rem;
+  border-radius: 0.6rem;
+}
+.fun-bar em { font-style: normal; font-weight: 600; color: var(--text); font-size: clamp(0.85rem, calc(1.1 * var(--vw)), 1rem); }
+.fun-bar strong { font-family: var(--font-mono); font-size: clamp(1rem, calc(1.5 * var(--vw)), 1.4rem); }
+.fun-bar span { color: var(--muted); font-size: clamp(0.8rem, calc(1 * var(--vw)), 0.95rem); white-space: nowrap; }
+
+/* logos: social-proof wall; images grayscale, text fallback as wordmarks */
+.logos { display: grid; gap: clamp(1rem, calc(2 * var(--vw)), 2rem); margin-top: clamp(2.5rem, calc(5 * var(--vh)), 4rem); }
+.logo-cell {
+  display: grid;
+  place-items: center;
+  min-height: clamp(4rem, calc(11 * var(--vh)), 6.5rem);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
+}
+.logo-cell img { max-height: 2.2rem; max-width: 60%; filter: grayscale(1) brightness(1.6); opacity: 0.75; transition: 0.25s; }
+.logo-cell:hover img { filter: none; opacity: 1; }
+.logo-cell span { font-weight: 800; letter-spacing: 0.04em; color: var(--muted); font-size: clamp(1rem, calc(1.4 * var(--vw)), 1.3rem); }
+
+/* quadrant: 2×2 positioning chart; items plot on a 0–10 grid */
+.quad-wrap {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.6rem;
+  height: min(calc(58 * var(--vh)), 34rem);
+  margin-top: clamp(1.5rem, calc(3 * var(--vh)), 3rem);
+}
+.quad {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(var(--line), var(--line)) center / 1px 100% no-repeat,
+    linear-gradient(var(--line), var(--line)) center / 100% 1px no-repeat;
+}
+.quad-dot { display: flex; align-items: center; gap: 0.45rem; }
+.quad-dot i { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 12px var(--accent); }
+.quad-dot span { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text); white-space: nowrap; }
+.quad-x, .quad-y { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint); }
+.quad-x { grid-column: 2; text-align: center; margin-top: 0.5rem; }
+.quad-y { writing-mode: sideways-lr; text-align: center; }
+.quad-corner {
+  position: absolute;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--faint);
+  padding: 0.6rem 0.9rem;
+}
+
+/* chart: single-series bar chart from `label / value` items — no library */
+.chart {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  align-items: end;
+  gap: clamp(1rem, calc(2.5 * var(--vw)), 2.5rem);
+  height: min(calc(52 * var(--vh)), 30rem);
+  margin-top: clamp(2rem, calc(4 * var(--vh)), 4rem);
+}
+.chart .col { display: grid; grid-template-rows: 1fr auto; height: 100%; gap: 0.6rem; text-align: center; }
+.chart .bar-wrap { display: grid; align-items: end; padding-top: 1.8rem; }
+.chart .bar {
+  position: relative;
+  height: calc(var(--v) * 1%);
+  border-radius: 0.5rem 0.5rem 0 0;
+  background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 45%, var(--bg)));
+  transform: scaleY(0);
+  transform-origin: bottom;
+  transition: transform 0.7s var(--ease);
+  transition-delay: var(--d, 0s);
+}
+.chart .reveal.in .bar { transform: none; }
+.chart .val {
+  position: absolute;
+  top: -1.7rem;
+  width: 100%;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--accent);
+  opacity: 0;
+  transition: opacity 0.3s;
+  transition-delay: calc(var(--d, 0s) + 0.5s);
+}
+.chart .reveal.in .val { opacity: 1; }
+.chart .lab { color: var(--muted); font-size: clamp(0.8rem, calc(1 * var(--vw)), 0.95rem); }
+html.static .chart .bar { transform: none; transition: none; }
+html.static .chart .val { opacity: 1; transition: none; }
+
+/* quote: full-bleed pull-quote with attribution */
+.quote-mark { font-family: Georgia, serif; font-size: clamp(4rem, calc(9 * var(--vw)), 8rem); line-height: 0.4; color: var(--accent); }
+.quote-text {
+  font-size: clamp(1.6rem, calc(3.2 * var(--vw)), 3rem);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  max-width: 26ch;
+}
+.quote-cite { display: flex; align-items: center; gap: 1rem; margin-top: clamp(1.5rem, calc(4 * var(--vh)), 2.5rem); }
+.quote-cite .qc-name { font-weight: 700; }
+.quote-cite .qc-role { color: var(--muted); font-size: 0.9rem; }
+
+/* compare: two panels with a vs seam; @winner highlights one side */
+.compare {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(1.5rem, calc(3 * var(--vw)), 3rem);
+  align-items: stretch;
+  margin-top: clamp(2rem, calc(4 * var(--vh)), 4rem);
+}
+.compare .vs {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  display: grid; place-items: center;
+  width: clamp(2.6rem, calc(3.4 * var(--vw)), 3.4rem);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  font: 700 clamp(0.8rem, calc(1 * var(--vw)), 1rem) var(--font-mono);
+  color: var(--accent);
+}
+.compare .card.win { border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); background: var(--accent-soft); }
+@media screen and (max-width: 56rem) { .compare { grid-template-columns: 1fr; } .compare .vs { display: none; } }
+
+/* agenda: auto-generated from chapter dividers, click to jump */
+.agenda {
+  display: grid;
+  gap: clamp(1rem, calc(2.5 * var(--vh)), 2rem);
+  align-content: center;
+  max-width: 60rem;
+}
+.agenda a {
+  display: grid;
+  grid-template-columns: 4rem 1fr;
+  align-items: baseline;
+  text-decoration: none;
+  color: var(--text);
+  border-bottom: 1px solid var(--line);
+  padding-bottom: clamp(0.6rem, calc(1.5 * var(--vh)), 1rem);
+}
+.agenda .a-n { font-family: var(--font-mono); color: var(--accent); font-size: clamp(1rem, calc(1.4 * var(--vw)), 1.3rem); }
+.agenda .a-t { font-size: clamp(1.4rem, calc(2.6 * var(--vw)), 2.4rem); font-weight: 700; letter-spacing: -0.01em; transition: color 0.2s; }
+.agenda a:hover .a-t { color: var(--accent); }
+
+/* cycle: items on a ring, read clockwise. Node/arrow positions come from
+   the renderer as left/top percentages; .cyc-pos centers each on its point
+   so the inner .reveal keeps its own transform for the entrance */
+.cycle {
+  position: relative;
+  aspect-ratio: 1;
+  height: min(calc(62 * var(--vh)), 36rem);
+  margin-inline: auto;
+}
+.cyc-ring {
+  position: absolute;
+  inset: 13%;
+  border: 2px dashed var(--line);
+  border-radius: 50%;
+}
+.cyc-pos { position: absolute; transform: translate(-50%, -50%); }
+.cyc-node {
+  width: max-content;
+  max-width: clamp(11rem, calc(16 * var(--vw)), 15rem);
+  text-align: center;
+}
+.cyc-node p { font-size: clamp(0.8rem, calc(1 * var(--vw)), 0.95rem); }
+.cyc-arrow {
+  display: block;
+  color: var(--accent);
+  font-size: clamp(1rem, calc(1.6 * var(--vw)), 1.4rem);
+  user-select: none;
+}
+
+/* relations: entities on a ring, labelled edges as chords underneath */
+.rel svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.rel line { stroke: var(--faint); stroke-width: 0.35; }
+.rel marker path { fill: var(--faint); }
+.rel-label {
+  display: block;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 0.35rem;
+  padding: 0.08rem 0.4rem;
+}
+
+/* team: people cards with generated avatars */
+.person { display: flex; gap: 1rem; align-items: center; }
+.person p { margin-top: 0.15rem; }
+.avatar { flex-shrink: 0; border-radius: 50%; }
+img.avatar { object-fit: cover; background: var(--surface-2); border: 1px solid var(--line); }
+
+/* profile: one-pager — avatar + name in the header, body below it */
+.profile-id {
+  display: flex;
+  align-items: center;
+  gap: clamp(1rem, calc(2 * var(--vw)), 1.75rem);
+  margin-top: 0.75rem;
+}
+.profile-body {
+  display: grid;
+  grid-template-columns: 2fr 3fr;
+  gap: clamp(2rem, calc(4 * var(--vw)), 4rem);
+  align-items: start;
+}
+/* screen-scoped: print media queries evaluate against the printer's default
+   page size, not the @page px size, so an unscoped max-width would falsely
+   stack the columns in the PDF */
+@media screen and (max-width: 56rem) { .profile-body { grid-template-columns: 1fr; } }
+.profile-role { color: var(--accent); font-family: var(--font-mono); margin-top: 0.4rem; }
+.profile-cols { display: grid; gap: clamp(0.8rem, calc(1.5 * var(--vw)), 1.25rem); }
+.profile-h {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--accent);
+}
+.profile-cols ul, .tier ul { list-style: none; padding: 0; margin-top: 0.6rem; }
+.profile-cols li, .tier li {
+  position: relative;
+  padding-left: 1.3rem;
+  margin-top: 0.45rem;
+  color: var(--muted);
+  font-size: clamp(0.85rem, calc(1.1 * var(--vw)), 1rem);
+}
+.profile-cols li::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0.55em;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/* pricing / commercials */
+.tier { position: relative; display: flex; flex-direction: column; }
+.tier-name {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--accent);
+}
+.tier-price {
+  font-size: clamp(1.5rem, calc(2.8 * var(--vw)), 2.4rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0.6rem 0 0.4rem;
+}
+.tier li::before { content: "✓"; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
+.tier.featured {
+  border-color: color-mix(in srgb, var(--accent) 60%, var(--line));
+  background: var(--accent-soft);
+}
+.tier-badge {
+  position: absolute;
+  top: -0.75rem; right: 1rem;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.2rem 0.6rem;
+  border-radius: 0.5rem;
+}
+
+/* deck footer: brand · presentation title · page number, on every slide.
+   Rendered per-section (absolute, inside the sticky stage for scrubs) rather
+   than position: fixed, so each printed page carries its own page number */
+.deck-footer {
+  position: absolute;
+  left: var(--pad); right: var(--pad);
+  bottom: clamp(0.8rem, calc(2.2 * var(--vh)), 1.5rem);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  color: var(--faint);
+  pointer-events: none;
+}
+.deck-footer .f-brand { color: var(--muted); display: flex; align-items: center; gap: 0.5em; }
+.deck-footer .f-brand img { height: 1.2em; }
+
+/* divider: section separator — large heading, vertically centred */
+section.divider h2 { max-width: 24ch; }
+section.divider.centered { justify-items: center; text-align: center; }
+section.divider.centered .lede { margin-inline: auto; }
+
+/* keys footer */
+.keys {
+  display: flex; flex-wrap: wrap;
+  gap: 1.5rem 2.5rem;
+  margin-top: 3rem;
+  color: var(--muted);
+  font-size: clamp(0.95rem, calc(1.3 * var(--vw)), 1.15rem);
+}
+
+/* ============================================================
+   SPINE — segmented progress rail; one segment per section,
+   fills with that section's progress, click to jump.
+   ============================================================ */
+.spine {
+  position: fixed;
+  left: clamp(0.6rem, calc(1.2 * var(--vw)), 1.4rem);
+  top: 50%;
+  transform: translateY(-50%);
+  height: min(calc(70 * var(--vh)), 40rem);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 10;
+  /* generous hover halo so the thin rail is easy to catch */
+  padding: 0 0.9rem;
+  margin: 0 -0.9rem;
+}
+.sgroup button {
+  all: unset;
+  cursor: pointer;
+  position: relative;
+  width: 4px;
+  border-radius: 3px;
+  background: var(--line);
+  overflow: visible;
+  transition: width 0.25s var(--ease);
+}
+.spine:hover .sgroup button, .spine:focus-within .sgroup button { width: 10px; }
+.sgroup button .fill {
+  position: absolute; inset: 0 0 auto 0;
+  height: calc(var(--p, 0) * 100%);
+  border-radius: 3px;
+  background: var(--accent);
+}
+.sgroup button:hover { background: var(--faint); }
+.sgroup button.active { background: color-mix(in srgb, var(--accent) 35%, var(--line)); }
+/* appendix segments read as backup material: dimmed, gapped off the flow */
+.sgroup button.appendix { opacity: 0.45; }
+.sgroup:not(:has(.appendix)) + .sgroup:has(.appendix) { margin-top: 10px; }
+
+/* chapters: the current chapter expands into its per-slide segments at full
+   weighted size; every other chapter collapses to ONE summary segment with
+   an aggregate fill — never a squash of hairline slivers */
+.sgroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  flex: var(--w, 1);
+  transition: flex 0.35s var(--ease);
+}
+.sgroup:not(.current) { flex: 600; }
+.sgroup .gsum { flex: 1; }
+.sgroup.current .gsum { display: none; }
+.sgroup:not(.current) button:not(.gsum) { display: none; }
+
+/* horizontal page stepper: chapter name + one dot per slide of the current
+   chapter. Opt-in via @pager: top|bottom on the hero; off by default */
+.pager {
+  display: none;
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.pager.top { top: clamp(0.9rem, calc(2.2 * var(--vh)), 1.6rem); }
+.pager.bottom { bottom: clamp(2.6rem, calc(6 * var(--vh)), 3.6rem); }
+.pager.top, .pager.bottom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 10;
+  padding: 0.45rem 0.9rem;
+  border-radius: 2rem;
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(6px);
+}
+.pager .p-ch {
+  font: 700 0.6rem var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--faint);
+  margin-right: 0.3rem;
+}
+.pager button {
+  all: unset;
+  cursor: pointer;
+  width: 7px;
+  height: 7px;
+  border-radius: 4px;
+  background: var(--line);
+  transition: width 0.25s var(--ease), background 0.2s;
+}
+.pager button:hover { background: var(--faint); }
+.pager button.active { width: 22px; background: var(--accent); }
+html.overview .pager, html.inking .pager { display: none; }
+
+/* hovering the rail opens one structured TOC panel — chapters as headings,
+   numbered slide rows beneath, the active slide highlighted. One surface,
+   not thirty floating chips: the rail shows progress, the panel navigates. */
+.toc {
+  position: absolute;
+  left: calc(100% - 0.3rem);
+  top: 50%;
+  transform: translateY(-50%) translateX(-8px);
+  max-height: min(calc(84 * var(--vh)), 46rem);
+  overflow-y: auto;
+  background: color-mix(in srgb, var(--surface-2) 92%, transparent);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  padding: 0.5rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s, transform 0.25s var(--ease);
+  white-space: nowrap;
+}
+.spine:hover .toc, .spine:focus-within .toc {
+  opacity: 1;
+  transform: translateY(-50%);
+  pointer-events: auto;
+}
+.toc-ch {
+  font: 700 0.6rem var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--accent);
+  padding: 0.6rem 0.6rem 0.2rem;
+  cursor: pointer;
+}
+.toc-ch:hover { color: var(--text); }
+.toc button {
+  all: unset;
+  display: flex;
+  align-items: baseline;
+  gap: 0.55em;
+  box-sizing: border-box;
+  width: 100%;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+  padding: 0.26rem 0.6rem;
+  border-radius: 0.4rem;
+}
+.toc button:hover { background: var(--accent-soft); color: var(--text); }
+.toc button.active { color: var(--text); }
+.toc button .n { color: var(--faint); font-size: 0.62rem; }
+.toc button.active .n { color: var(--accent); }
+.toc button .t { overflow: hidden; text-overflow: ellipsis; max-width: 26ch; }
+.toc .toc-append { opacity: 0.55; }
+.toc-sep { border-top: 1px solid var(--line); margin: 0.45rem 0.5rem; }
+
+/* ============================================================
+   INK — annotation overlay. A draws over the current frame,
+   C clears, A/Esc exits; an OS screenshot (Cmd+Ctrl+Shift+4)
+   then puts the annotated slide on the clipboard for review.
+   ============================================================ */
+#ink {
+  position: fixed;
+  inset: 0;
+  /* explicit, not auto: a canvas displays at its intrinsic (bitmap) size,
+     which is devicePixelRatio × the viewport — strokes would land at 2×
+     the cursor on retina without this */
+  width: 100%;
+  height: 100%;
+  z-index: 40;
+  display: none;
+  cursor: crosshair;
+  touch-action: none;
+}
+html.inking #ink { display: block; }
+.ink-badge {
+  position: fixed;
+  top: clamp(0.8rem, calc(2 * var(--vw)), 1.5rem);
+  right: clamp(0.8rem, calc(2 * var(--vw)), 1.5rem);
+  z-index: 41;
+  display: none;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  padding: 0.3rem 0.7rem;
+}
+html.inking .ink-badge { display: block; }
+.ink-badge .n { color: var(--accent); }
+
+/* comments: in annotate mode, double-click drops a numbered pin with a
+   typed note; E copies all notes as a markdown punch list per section.
+   Pins live inside their section (z above the ink canvas) so they scroll
+   with the content and survive via localStorage */
+.note-pin {
+  position: absolute;
+  z-index: 45;
+  display: none;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+}
+html.inking .note-pin { display: block; }
+.pin-n {
+  display: grid; place-items: center;
+  width: 1.5rem; height: 1.5rem;
+  border-radius: 50%;
+  background: var(--accent-2);
+  color: var(--bg);
+  font: 700 0.72rem var(--font-mono);
+}
+.pin-t {
+  position: absolute;
+  left: 1.9rem; top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  max-width: 40ch; overflow: hidden; text-overflow: ellipsis;
+  font-family: var(--font-mono); font-size: 0.7rem;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 0.4rem;
+  padding: 0.15rem 0.5rem;
+  opacity: 0;
+  transition: opacity 0.15s;
+  pointer-events: none;
+}
+.note-pin:hover .pin-t { opacity: 1; }
+.note-input {
+  position: fixed;
+  z-index: 46;
+  transform: translate(-50%, -50%);
+  width: min(24rem, 80vw);
+  font: 0.8rem var(--font-mono);
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--accent);
+  border-radius: 0.4rem;
+  padding: 0.4rem 0.6rem;
+  outline: none;
+}
+
+/* ============================================================
+   OVERVIEW — O zooms out to a clickable grid of every slide.
+   Entered together with .static so scrubs/reveals flatten; zoom
+   (not transform) so layout boxes shrink with the content.
+   ============================================================ */
+html.overview #canvas {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.2rem;
+  padding: 1.2rem;
+}
+html.overview section {
+  zoom: 0.16;
+  height: auto !important;      /* collapse scrub wrapper heights */
+  cursor: pointer;
+  outline: 12px solid var(--line);   /* zoomed too — renders ~2px */
+  outline-offset: -6px;
+  scroll-snap-align: none;
+}
+html.overview section:hover { outline-color: var(--accent); }
+html.overview .spine { display: none; }
+
+/* ============================================================
+   STATIC MODE — shared by prefers-reduced-motion and print:
+   scrubs flatten to their completed state, reveals are visible.
+   ============================================================ */
+html.static .reveal { opacity: 1; transform: none; filter: none; transition: none; }
+html.static .scrub { height: auto !important; }
+html.static .scrub .stage { position: static; }
+html.static .seq .blurb { display: none; }
+html.static .chip { color: var(--text); border-color: var(--line); transform: none; }
+html.static .track .fill { width: 100% !important; transition: none; }
+html.static .static-stages {
+  display: block; list-style: none;
+  margin-top: 2rem; padding: 0;
+  max-width: 62ch;
+}
+html.static .static-stages li { display: flex; gap: 1em; margin-top: 0.9rem; color: var(--muted); }
+html.static .static-stages .head { color: var(--accent); font-family: var(--font-mono); flex-shrink: 0; }
+html.static .hero-hint { animation: none; }
+/* gradient text via background-clip prints with box artifacts — go solid */
+html.static .big-num { background: none; color: var(--accent); }
+
+@media print {
+  @page { size: 1920px 1080px; margin: 0; }
+  /* the @page size ÷ 100 — keep in sync with the line above */
+  :root { --vw: 19.2px; --vh: 10.8px; --vmax: 19.2px; }
+  html { scroll-behavior: auto; }
+  /* exact on body, not just section: the page background lives here, and
+     without it Chrome prints white pages with near-white text */
+  body { background: var(--bg); print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  /* background on the section, not just body: the interactive print dialog
+     never paints the root canvas background (that's the "Background
+     graphics" checkbox, which print-color-adjust cannot override), but it
+     does honor exact on element backgrounds */
+  section { break-after: page; min-height: calc(100 * var(--vh)); background: var(--bg); print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .spine, .pager, .hero-hint, #ink, .ink-badge, .note-pin, .note-input { display: none !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CONTENT LAYER — the whole deck is this markdown document.
+     Edit copy here and nowhere else.
+
+     Rules:  `---` separates sections · `@key: value` lines set
+     section config (`@type` picks the renderer) · `#`/`##` is the
+     title · paragraphs before the first `###` are the lede ·
+     each `###` + paragraph is an item (card, stage, or number).
+     Inline: **bold**, *em*, `code`.
+     ============================================================ -->
+<script type="text/x-deck" id="deck-src">
+@type: hero
+@brand: ◆ SAPPHIRE
+@pager: top
+# Web Deck
+A presentation that is just a web page. One file, no build, full-bleed.
+Press **Space** to step through — or scroll freely. Both do the same thing, because *scroll position is the single source of truth*.
+Note: `Note:` lines like this one are speaker notes — press **N** for the presenter window; they never render on the slide.
+
+space / ↓ to begin
+
+---
+@type: agenda
+@eyebrow: Agenda
+## Where this goes
+The rows below generate themselves from the chapter dividers — add a chapter, the agenda updates.
+
+---
+@type: prose
+@eyebrow: Why
+## PowerPoint is the bottleneck
+AI agents are dramatically better at building **web layouts against a design system** than at positioning boxes in slideware. So let them: write the content as markdown, hand the polish to the browser, and keep a `Cmd+P` PDF as the static deliverable.
+
+- Content lives apart from layout — edit a bullet without touching code
+- Design tokens make the deck look like *your product*, not a template
+- The whole thing prints to a crisp vector PDF, one section per page
+
+---
+@type: grid
+@cols: 3
+@eyebrow: Architecture
+## Six pillars
+### Content apart from view
+The deck is a markdown document at the top of the file. The DOM is rendered from it — no copy is hardcoded in markup.
+### Design tokens
+Every color, size, and radius comes from one `:root` block. Swap the block, rebrand the deck.
+### Full-bleed
+Sections fill the screen. No centered max-width column — this is a presentation, not a blog post.
+### Scroll is the timeline
+Reveals and scrubbed sequences are driven by scroll position. The keyboard just scrolls for you.
+### Print built in
+A static layout ships from day one — it serves `prefers-reduced-motion` **and** the PDF export.
+### One file
+Open `index.html`, present. Nothing to install, nothing to build.
+
+---
+@type: divider
+@chapter: Engine
+@eyebrow: Part one
+## How the engine works
+Dividers open a *chapter*: the spine groups the slides that follow, expands the chapter you're in, and names the collapsed ones on hover.
+
+---
+@type: scrub
+@eyebrow: The signature move
+## Scroll is the timeline
+This section is *pinned* while you travel through it. Your progress scrubs the sequence below — and each stage is a keyboard waypoint, so **Space steps through this very animation**.
+Note: Let it scrub once with the wheel, then step back with ↑ to show the sequence is reversible.
+### pin
+The section wrapper is taller than the screen; the visible stage sticks to the viewport while you scroll through the wrapper.
+### progress
+Scroll position through the wrapper becomes a number from 0 to 1. No timers, no state machine — just geometry.
+### stages
+That number selects the active stage. Scroll back up and the sequence reverses, exactly like scrubbing a video.
+### waypoints
+Every stage boundary is a stop on the keyboard route. Presenters click through; readers scroll. Same pixels either way.
+
+---
+@type: numbers
+@eyebrow: Weight
+## The whole engine
+### 1
+file to open
+### 0
+dependencies
+### 23
+section types in this deck
+
+---
+@type: mirror
+@eyebrow: Editing
+## Edit it like a document
+This is the actual markdown source of *this section*, rendered by the same parser that built every other section. Fixing a typo for the exec review means editing one line of text — not spelunking through layout code.
+
+---
+@type: divider
+@chapter: Layouts
+@align: center
+@eyebrow: Layout library
+## Common slide layouts
+One `@type:` directive per layout — same grammar, same tokens, same print. This separator is a layout too: a big centred heading and nothing else.
+
+---
+@type: media
+@eyebrow: Layout · text + image
+## Make the case, show the thing
+Pair an argument with a visual. Point `@image:` at a screenshot or chart export; with no image set, a placeholder holds the frame.
+- Text column keeps a readable measure
+- Media keeps a 16:9 frame, cropped to cover
+- `@side: left` flips the composition
+
+---
+@type: media
+@side: left
+@image: https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&h=675&q=60
+@eyebrow: Layout · image + text
+## Lead with the visual
+Flip the composition when the visual *is* the argument — dashboards, screenshots, before/after shots.
+- `@side: left` puts the frame first
+- Same grammar, one directive changed
+
+---
+@type: grid
+@cols: 3
+@eyebrow: Layout · 1 × 3
+## Three options, one decision
+### Buy
+Fastest to value; ongoing licence cost and vendor lock-in.
+### Build
+Total control; longest lead time, and you own the maintenance.
+### Partner
+Shared risk and shared upside; needs a strong contract.
+
+---
+@type: grid
+@cols: 4
+@eyebrow: Layout · 2 × 4
+## Capability map
+### Ingest
+Git, Jira, CI signals
+### Analyse
+Graph + biomarkers
+### Plan
+Findings become steps
+### Execute
+Isolated worktrees
+### Verify
+Self-checking agents
+### Review
+The human gate
+### Report
+Quality headline
+### Learn
+Rules that stick
+
+---
+@type: grid
+@cols: 2
+@eyebrow: Layout · 2 × 2
+## Where we stand
+Cards stretch to share the available height — longer content gets room instead of clipping.
+### Strengths
+- Design system already in production
+- Exec sponsorship secured
+- AI-assisted pipeline proven on two projects
+### Weaknesses
+- PowerPoint muscle memory across the org
+- Limited frontend capability in-house
+### Opportunities
+- RFP responses at twice the polish, half the effort
+- Reusable deck components per bid
+- Web decks double as leave-behind microsites
+### Threats
+- Procurement teams that mandate .pptx submissions
+- Design drift if tokens aren't governed
+
+---
+@type: diagram
+@eyebrow: Layout · technical diagram
+## How the pieces connect
+A linear flow reads left to right; each node is one `###` item.
+### Client
+`ctl` — thin HTTP client
+### API
+FastAPI — validates at the boundary
+### Queue
+Dramatiq — background runs
+### Workers
+Analysis in containers
+### Graph DB
+Findings, stamped by run
+
+---
+@type: chart
+@unit: %
+@max: 100
+@eyebrow: Layout · chart
+## Time saved per deck stage
+Single-series bars from one number per item — enough for most exec charts, no library.
+### Outline
+30
+### Design
+80
+### Build
+65
+### Revisions
+90
+
+---
+@type: quadrant
+@x: Effort →
+@y: Impact →
+@labels: Quick wins, Big bets, Fill-ins, Money pits
+@eyebrow: Layout · quadrant
+## Where to spend the quarter
+Items plot from an `x,y` line on a 0–10 scale — the chart every strategy meeting draws.
+### Deck templates
+2,8
+### Brand token pipeline
+6,9
+### Slide archive site
+3,4
+### PPT export parity
+9,3
+
+---
+@type: compare
+@winner: 2
+@eyebrow: Layout · comparison
+## Slideware vs web deck
+Two panels and a seam — `@winner` highlights the side you're arguing for.
+### PowerPoint
+- Copy trapped in text boxes
+- Brand drift per author
+- Motion capped at transitions
+### Web deck
+- Markdown content layer
+- Tokens enforce the brand
+- Scroll-driven scrollytelling
+
+---
+@type: quote
+@cite: Dana Whitfield
+@role: VP Engineering, Meridian
+@eyebrow: Layout · quote
+## We rebuilt the board deck in an afternoon — and it finally looked like our product.
+
+---
+@type: relations
+@eyebrow: Layout · relationships
+## Who talks to what
+Entities on a ring; edges come from `-> Target | label` lines in an item's body — systems, org maps, data flows.
+### Client
+### API
+-> Client | responses
+-> Queue | enqueues runs
+### Queue
+-> Workers | dispatches
+### Workers
+-> Graph DB | writes findings
+### Graph DB
+-> API | serves queries
+
+---
+@type: cycle
+@eyebrow: Layout · cycle
+## Iterate like you mean it
+The loop everyone draws on the whiteboard — items on a ring, read clockwise.
+### Plan
+Pick the one metric to move
+### Build
+Smallest change that could move it
+### Measure
+Ship behind a flag, watch the number
+### Learn
+Keep, kill, or double down
+
+---
+@type: timeline
+@units: 12
+@labels: Q1, Q2, Q3, Q4
+@eyebrow: Layout · timeline
+## Delivery plan
+Bars sit on a unit grid — `@units` sets the resolution, each item gives its `start-end | note`.
+### Discovery
+1-2 | Stakeholders, constraints
+### Platform build
+2-6 | Core pipeline and integrations
+### Pilot teams
+5-8 | Two teams, weekly feedback
+### Rollout
+8-11 | Org-wide, playbooks and training
+### Handover
+11-12 | Run-book
+
+---
+@type: funnel
+@eyebrow: Layout · funnel
+## Pipeline, quarter to date
+Stages narrow with their numbers — `value | label` per item, widths scaled to the first stage.
+### Inbound
+1200 | qualified leads
+### Discovery
+340 | calls booked
+### Proposal
+90 | decks sent
+### Closed
+28 | signed
+
+---
+@type: logos
+@cols: 4
+@eyebrow: Layout · social proof
+## Teams presenting with this
+Drop in `![name](url)` logo images (rendered grayscale, color on hover) — or let names fall back to wordmarks.
+### Meridian
+### Northwind
+### Kestrel Labs
+### Brightline
+### Halyard
+### Ostrom & Co
+### Fernworks
+### Tidepool
+
+---
+@type: team
+@cols: 3
+@eyebrow: Layout · team
+## Who's on it
+Standard markdown image syntax gives a member a photo; anyone without one gets a generated initials avatar — see Marcus.
+### Ana Kovač
+Engagement lead
+![Ana](https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=128&h=128&q=60&crop=faces)
+### Rafael Ortiz
+Solution architect
+![Rafael](https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=128&h=128&q=60&crop=faces)
+### Priya Sharma
+Data engineering
+![Priya](https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=128&h=128&q=60&crop=faces)
+### Tomo Yamada
+Platform SRE
+![Tomo](https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=128&h=128&q=60&crop=faces)
+### Leah Cohen
+Delivery manager
+![Leah](https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=128&h=128&q=60&crop=faces)
+### Marcus Webb
+Security review
+
+---
+@type: profile
+@role: Solution architect
+@photo: https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=256&h=256&q=60&crop=faces
+@eyebrow: Layout · profile
+## Rafael Ortiz
+Fifteen years building developer platforms; led three enterprise rollouts from pilot to org-wide adoption.
+### Experience
+- Principal engineer, fintech scale-up — platform of 400 services
+- Lead architect, gov digital agency — zero-downtime migration
+### Strengths
+- Event-driven architecture
+- Legacy modernisation
+- Developer experience
+### In this engagement
+- Owns the target architecture
+- Pairs with your platform team weekly
+
+---
+@type: pricing
+@featured: 2
+@eyebrow: Layout · commercials
+## Engagement options
+### Advisory
+$24k / quarter
+- Fortnightly architecture reviews
+- Findings report each quarter
+- Direct channel to the team
+### Delivery
+$95k / quarter
+- Embedded squad of three
+- Pilot to production rollout
+- Weekly exec readout
+### Scale
+By proposal
+- Multi-team programme
+- Dedicated platform squad
+- Quarterly business reviews
+
+---
+@type: end
+## That's the deck
+Built from one markdown block, one token block, and ~200 lines of engine.
+
+---
+@type: prose
+@appendix: yes
+@eyebrow: Appendix · A
+## Backup slides live here
+Keyboard flow stops at the closing slide — **Space never lands on an appendix**. But they sit on the spine (dimmed), deep links and free scrolling reach them, and they print with the deck. The standard exec pattern: answers for the questions you hope nobody asks.
+- `@appendix: yes` on any section
+- Skipped by waypoints, kept by everything else
+
+---
+@type: numbers
+@appendix: yes
+@eyebrow: Appendix · B
+## Verification loop
+### 30
+sections in this deck
+### 30
+PDF pages — asserted equal
+### 1
+command — `verify.sh`
+</script>
+
+<nav class="spine" aria-label="Deck progress"></nav>
+<nav class="pager" aria-label="Chapter pages"></nav>
+<main id="canvas"></main>
+<canvas id="ink" aria-hidden="true"></canvas>
+<div class="ink-badge" aria-hidden="true"><span class="n"></span> annotate — draw · dbl-click comment · <kbd>C</kbd> clear slide · <kbd>E</kbd> copy feedback · <kbd>A</kbd>/<kbd>Esc</kbd> done</div>
+
+<script>
+/* ============================================================
+   PARSER — a small, deterministic markdown subset.
+   ============================================================ */
+function inline(s) {
+  return s
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*([^*]+)\*/g, "<em>$1</em>");
+}
+
+function parseSection(raw) {
+  const cfg = {};
+  const lines = raw.trim().split("\n");
+  let i = 0;
+  while (i < lines.length && /^@\w+:/.test(lines[i])) {
+    const m = lines[i].match(/^@(\w+):\s*(.*)$/);
+    cfg[m[1]] = m[2];
+    i++;
+  }
+  const body = lines.slice(i).join("\n");
+  const parts = body.split(/^### /m);
+  const head = parts.shift();
+
+  let title = "";
+  const lede = [];
+  for (const line of head.split("\n")) {
+    const t = line.trim();
+    if (!t) continue;
+    if (/^##? /.test(t)) title = t.replace(/^##? /, "");
+    else lede.push(t);
+  }
+  const items = parts.map((p) => {
+    const ls = p.split("\n");
+    return { head: ls.shift().trim(), body: ls.map((x) => x.trim()).filter(Boolean) };
+  });
+  // `Note:` lines anywhere in the section are speaker notes — collected for
+  // the presenter window, never rendered on the slide
+  const notes = [];
+  const strip = (arr) => arr.filter((l) => (l.startsWith("Note:") ? (notes.push(l.slice(5).trim()), false) : true));
+  const ledeShown = strip(lede);
+  items.forEach((it) => (it.body = strip(it.body)));
+  return { type: cfg.type || "prose", cfg, title, lede: ledeShown, items, notes, raw: raw.trim() };
+}
+
+function parseDeck(src) {
+  return src.trim().split(/\n---\n/).map(parseSection);
+}
+
+/* ============================================================
+   RENDERERS — one function per section type.
+   ============================================================ */
+const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+function el(html) {
+  const t = document.createElement("template");
+  t.innerHTML = html.trim();
+  return t.content.firstElementChild;
+}
+
+// photo avatar when a url is given; deterministic initials otherwise
+const PHOTO_RE = /^!\[[^\]]*\]\((.+)\)$/;
+function avatar(name, size = 56, photo = "") {
+  if (photo) return `<img class="avatar" src="${photo}" alt="${name}" width="${size}" height="${size}">`;
+  const initials = name.split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+  const hue = [...name].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7);
+  return `<svg class="avatar" width="${size}" height="${size}" viewBox="0 0 64 64" role="img" aria-label="${name}">
+    <circle cx="32" cy="32" r="31" fill="hsl(${hue} 42% 38%)"/>
+    <circle cx="32" cy="32" r="30.5" fill="none" stroke="rgba(255,255,255,0.25)"/>
+    <text x="32" y="41" text-anchor="middle" font-size="24" font-weight="700" fill="#fff">${initials}</text>
+  </svg>`;
+}
+
+// decorative stand-in for the media frame when no @image is set
+const PLACEHOLDER_SVG = `<svg viewBox="0 0 800 450" preserveAspectRatio="xMidYMid slice">
+  <defs><linearGradient id="ph" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#0c1220"/><stop offset="1" stop-color="#111a2e"/>
+  </linearGradient></defs>
+  <rect width="800" height="450" fill="url(#ph)"/>
+  <g stroke="#1e2a44" stroke-width="1">${Array.from({ length: 7 }, (_, i) => `<line x1="0" y1="${(i + 1) * 56}" x2="800" y2="${(i + 1) * 56}"/>`).join("")}</g>
+  <polyline points="60,360 190,300 320,330 450,210 580,240 710,110" fill="none" stroke="#64a2ff" stroke-width="3" stroke-linecap="round"/>
+  <g fill="#f5c04e">${[[190, 300], [450, 210], [710, 110]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="6"/>`).join("")}</g>
+</svg>`;
+
+// lede paragraphs + bullet list, reusable outside the header (e.g. media copy)
+function ledeHTML(s) {
+  const ps = s.lede
+    .filter((l) => !l.startsWith("- "))
+    .map((l, i) => `<p class="lede reveal" style="--d:${0.1 + i * 0.08}s">${inline(l)}</p>`)
+    .join("");
+  const bullets = s.lede.some((l) => l.startsWith("- "))
+    ? `<ul class="lede reveal" style="--d:0.2s">` +
+      s.lede.filter((l) => l.startsWith("- ")).map((l) => `<li>${inline(l.slice(2))}</li>`).join("") +
+      `</ul>`
+    : "";
+  return ps + bullets;
+}
+
+// eyebrow + title (+ lede) in a <header> — sections lay out as
+// grid-template-rows: auto 1fr, so the header row hugs the top of the frame
+// and body content never starts above the heading's bottom
+function headerHTML(s, withLede = true) {
+  const eyebrow = s.cfg.eyebrow ? `<p class="eyebrow reveal">${inline(s.cfg.eyebrow)}</p>` : "";
+  return `<header>${eyebrow}<h2 class="t2 reveal">${inline(s.title)}</h2>${withLede ? ledeHTML(s) : ""}</header>`;
+}
+
+// card body: paragraphs plus dot-bulleted lists from `- ` lines
+function cardBody(lines) {
+  const ps = lines.filter((l) => !l.startsWith("- ")).map((l) => `<p>${inline(l)}</p>`).join("");
+  const lis = lines.filter((l) => l.startsWith("- ")).map((l) => `<li>${inline(l.slice(2))}</li>`).join("");
+  return ps + (lis ? `<ul>${lis}</ul>` : "");
+}
+
+const renderers = {
+  hero(s) {
+    const [ledeLine, hint] = [s.lede.slice(0, -1), s.lede.at(-1)];
+    return el(`<section id="${slug(s.title)}" class="center">
+      <h1 class="t1 reveal">${inline(s.title)}</h1>
+      ${ledeLine.map((l, i) => `<p class="lede reveal" style="--d:${0.15 + i * 0.1}s">${inline(l)}</p>`).join("")}
+      <p class="hero-hint">${inline(hint)}</p>
+    </section>`);
+  },
+
+  prose(s) {
+    return el(`<section id="${slug(s.title)}">${headerHTML(s)}</section>`);
+  },
+
+  // section separator: large vertically centred heading; @align: center
+  // additionally centres it horizontally
+  divider(s) {
+    const centered = s.cfg.align === "center" ? " centered" : "";
+    return el(`<section id="${slug(s.title)}" class="center divider${centered}">
+      ${s.cfg.eyebrow ? `<p class="eyebrow reveal">${inline(s.cfg.eyebrow)}</p>` : ""}
+      <h2 class="t1 reveal" style="--d:0.05s">${inline(s.title)}</h2>
+      ${ledeHTML(s)}
+    </section>`);
+  },
+
+  // narrowing stages: item body is `value | label`; widths scale to the
+  // first stage's value, background intensity deepens per step
+  funnel(s) {
+    const rows = s.items.map((it) => {
+      const m = (it.body[0] || "").match(/^([\d,.]+)\s*(?:\|\s*(.*))?$/) || [];
+      return { head: it.head, num: m[1] || "", label: m[2] || "" };
+    });
+    const base = parseFloat((rows[0]?.num || "1").replace(/,/g, "")) || 1;
+    const els = rows
+      .map((r, i) => {
+        const w = Math.max(24, (parseFloat(r.num.replace(/,/g, "")) / base) * 100 || 100 - i * 18);
+        const mix = Math.min(18 + i * 14, 78);
+        return `<div class="fun-row reveal" style="--w:${w.toFixed(1)};--d:${(i * 0.1).toFixed(2)}s">
+          <div class="fun-bar" style="background:color-mix(in srgb, var(--accent) ${mix}%, var(--surface))">
+            <em>${inline(r.head)}</em><strong>${r.num}</strong><span>${inline(r.label)}</span>
+          </div></div>`;
+      })
+      .join("");
+    return el(`<section id="${slug(s.title)}">${headerHTML(s)}<div class="funnel">${els}</div></section>`);
+  },
+
+  // social-proof wall: a ![name](url) line renders a grayscale logo,
+  // items without one fall back to a styled text wordmark
+  logos(s) {
+    const cols = parseInt(s.cfg.cols, 10) || 4;
+    const cells = s.items
+      .map((it, i) => {
+        const img = (it.body.find((b) => PHOTO_RE.test(b)) || "").match(PHOTO_RE)?.[1] || "";
+        return `<div class="logo-cell reveal" style="--d:${((i % cols) * 0.06 + Math.floor(i / cols) * 0.05).toFixed(2)}s">
+          ${img ? `<img src="${img}" alt="${it.head}">` : `<span>${inline(it.head)}</span>`}
+        </div>`;
+      })
+      .join("");
+    return el(`<section id="${slug(s.title)}">${headerHTML(s)}
+      <div class="logos" style="grid-template-columns:repeat(${cols},1fr)">${cells}</div>
+    </section>`);
+  },
+
+  // 2×2 positioning chart: item body gives `x,y` on a 0–10 scale;
+  // @x/@y label the axes, @labels names the corners (TL, TR, BL, BR)
+  quadrant(s) {
+    const dots = s.items
+      .map((it, i) => {
+        const m = (it.body[0] || "").match(/^(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)/) || [, 5, 5];
+        const x = Math.min(10, +m[1]) * 10, y = 100 - Math.min(10, +m[2]) * 10;
+        return `<div class="cyc-pos" style="left:${x}%;top:${y}%">
+          <div class="quad-dot reveal" style="--d:${(i * 0.1).toFixed(2)}s"><i></i><span>${inline(it.head)}</span></div></div>`;
+      })
+      .join("");
+    const corners = (s.cfg.labels || "").split(",").map((l) => l.trim()).filter(Boolean);
+    const cpos = ["left:0;top:0", "right:0;top:0", "left:0;bottom:0", "right:0;bottom:0"];
+    const cs = corners.slice(0, 4).map((l, i) => `<span class="quad-corner" style="${cpos[i]}">${inline(l)}</span>`).join("");
+    return el(`<section id="${slug(s.title)}">${headerHTML(s)}
+      <div class="quad-wrap">
+        <div class="quad-y">${inline(s.cfg.y || "")}</div>
+        <div class="quad">${cs}${dots}</div>
+        <div class="quad-x">${inline(s.cfg.x || "")}</div>
+      </div>
+    </section>`);
+  },
+
+  // single-series bar chart: item body is the value; @max fixes the scale,
+  // @unit suffixes the value labels
+  chart(s) {
+    const vals = s.items.map((it) => parseFloat(it.body[0]) || 0);
+    const max = parseFloat(s.cfg.max) || Math.max(...vals, 1);
+    const unit = s.cfg.unit || "";
+    const cols = s.items
+      .map(
+        (it, i) => `<div class="col reveal" style="--d:${(i * 0.1).toFixed(2)}s">
+          <div class="bar-wrap"><div class="bar" style="--v:${((vals[i] / max) * 100).toFixed(1)}"><span class="val">${vals[i]}${unit}</span></div></div>
+          <div class="lab">${inline(it.head)}</div>
+        </div>`,
+      )
+      .join("");
+    return el(`<section id="${slug(s.title)}">${headerHTML(s)}<div class="chart">${cols}</div></section>`);
+  },
+
+  // pull-quote: the title is the quote; @cite/@role/@photo attribute it
+  quote(s) {
+    return el(`<section id="${slug(s.title)}" class="center">
+      ${s.cfg.eyebrow ? `<p class="eyebrow reveal">${inline(s.cfg.eyebrow)}</p>` : ""}
+      <div class="quote-mark reveal" aria-hidden="true">“</div>
+      <blockquote class="quote-text reveal" style="--d:0.1s">${inline(s.title)}</blockquote>
+      <div class="quote-cite reveal" style="--d:0.25s">
+        ${s.cfg.cite ? avatar(s.cfg.cite, 48, s.cfg.photo || "") : ""}
+        <div>
+          <div class="qc-name">${inline(s.cfg.cite || "")}</div>
+          <div class="qc-role">${inline(s.cfg.role || "")}</div>
+        </div>
+      </div>
+    </section>`);
+  },
+
+  // two panels + vs seam; @winner: 1|2 highlights a side
+  compare(s) {
+    const win = parseInt(s.cfg.winner, 10) || 0;
+    const panels = s.items
+      .slice(0, 2)
+      .map(
+        (it, i) => `<div class="card${i + 1 === win ? " win" : ""} reveal" style="--d:${(i * 0.12).toFixed(2)}s">
+          <div class="t3">${inline(it.head)}</div>
+          ${cardBody(it.body)}
+        </div>`,
+      )
+      .join("");
+    return el(`<section id="${slug(s.title)}">${headerHTML(s)}
+      <div class="compare"><span class="vs reveal" style="--d:0.25s">vs</span>${panels}</div>
+    </section>`);
+  },
+
+  // agenda rows generate themselves from the chapter dividers
+  agenda(s) {
+    const chapters = deck.filter((d) => d.type === "divider");
+    const rows = chapters
+      .map(
+        (c, i) => `<a class="reveal" style="--d:${(i * 0.1).toFixed(2)}s" href="#${slug(c.title)}">
+          <span class="a-n">${String(i + 1).padStart(2, "0")}</span>
+          <span class="a-t">${inline(c.cfg.chapter || c.title)}</span></a>`,
+      )
+      .join("");
+    return el(`<section id="${slug(s.title)}">${headerHTML(s)}<div class="agenda">${rows}</div></section>`);
+  },
+
+  grid(s) {
+    const cols = parseInt(s.cfg.cols, 10) || 0;
+    const c = cols || 3;
+    const style = cols ? ` style="grid-template-columns:repeat(${cols},1fr)"` : "";
+    const compact = cols >= 4 ? " card--sm" : "";
+    const cards = s.items
+      .map(
+        (it, i) => `<div class="card${compact} reveal" style="--d:${(i % c) * 0.08 + Math.floor(i / c) * 0.06}s">
+          <div class="t3">${inline(it.head)}</div>
+          ${cardBody(it.body)}
+        </div>`,
+      )
+      .join("");
+    return el(`<section id="${slug(s.title)}">${headerHTML(s)}<div class="grid"${style}>${cards}</div></section>`);
+  },
+
+  media(s) {
+    const img = s.cfg.image ? `<img src="${s.cfg.image}" alt="">` : PLACEHOLDER_SVG;
+    const flip = s.cfg.side === "left" ? " flip" : "";
+    return el(`<section id="${slug(s.title)}">
+      ${headerHTML(s, false)}
+      <div class="media-grid${flip}">
+        <div class="media-copy">${ledeHTML(s)}</div>
+        <div class="media-frame reveal" style="--d:0.2s">${img}</div>
+      </div>
+    </section>`);
+  },
+
+  diagram(s) {
+    const nodes = s.items
+      .map(
+        (it, i) =>
+          (i ? `<span class="flow-arrow reveal" style="--d:${(i * 0.12 - 0.04).toFixed(2)}s">→</span>` : "") +
+          `<div class="node card reveal" style="--d:${(i * 0.12).toFixed(2)}s">
+            <div class="node-head">${inline(it.head)}</div>
+            <p>${inline(it.body.join(" "))}</p>
+          </div>`,
+      )
+      .join("");
+    return el(`<section id="${slug(s.title)}">${headerHTML(s)}<div class="flow">${nodes}</div></section>`);
+  },
+
+  timeline(s) {
+    const units = parseInt(s.cfg.units, 10) || 12;
+    const labels = (s.cfg.labels || "").split(",").map((x) => x.trim()).filter(Boolean);
+    const rows = s.items
+      .map((it, i) => {
+        const m = (it.body[0] || "").match(/^(\d+)\s*[-–]\s*(\d+)\s*(?:\|\s*(.*))?$/) || [];
+        const [, a = 1, b = units, note = ""] = m;
+        const left = ((a - 1) / units) * 100;
+        const width = ((b - a + 1) / units) * 100;
+        return `<div class="tl-row reveal" style="--d:${(i * 0.1).toFixed(2)}s">
+          <div class="tl-label">${inline(it.head)}</div>
+          <div class="tl-track"><div class="tl-bar" style="left:${left}%;width:${width}%"><span>${inline(note)}</span></div></div>
+        </div>`;
+      })
+      .join("");
+    return el(`<section id="${slug(s.title)}">${headerHTML(s)}
+      <div class="timeline" style="--u:${units}">
+        <div class="tl-row"><div class="tl-label"></div><div class="tl-labels" style="--l:${labels.length || 4}">${labels.map((l) => `<span>${inline(l)}</span>`).join("")}</div></div>
+        ${rows}
+      </div>
+    </section>`);
+  },
+
+  // items on a ring read clockwise, arrows at the gaps — the whiteboard loop
+  cycle(s) {
+    const n = s.items.length;
+    const pt = (frac, r = 37) => {
+      const a = frac * 2 * Math.PI - Math.PI / 2;
+      return [50 + r * Math.cos(a), 50 + r * Math.sin(a)];
+    };
+    const nodes = s.items
+      .map((it, i) => {
+        const [x, y] = pt(i / n);
+        return `<div class="cyc-pos" style="left:${x.toFixed(2)}%;top:${y.toFixed(2)}%">
+          <div class="cyc-node card reveal" style="--d:${(i * 0.12).toFixed(2)}s">
+            <div class="node-head">${inline(it.head)}</div>
+            <p>${inline(it.body.join(" "))}</p>
+          </div></div>`;
+      })
+      .join("");
+    const arrows = s.items
+      .map((_, i) => {
+        const [x, y] = pt((i + 0.5) / n);
+        const deg = ((i + 0.5) / n) * 360; // tangent, pointing clockwise
+        return `<div class="cyc-pos" style="left:${x.toFixed(2)}%;top:${y.toFixed(2)}%">
+          <span class="cyc-arrow reveal" style="transform:rotate(${deg.toFixed(1)}deg);--d:${(i * 0.12 + 0.06).toFixed(2)}s">➤</span></div>`;
+      })
+      .join("");
+    return el(`<section id="${slug(s.title)}">${headerHTML(s)}
+      <div class="cycle"><div class="cyc-ring"></div>${arrows}${nodes}</div>
+    </section>`);
+  },
+
+  // entities on a ring, directed labelled edges from `-> Target | label`
+  // body lines. Deterministic ring layout reads fine up to ~7 entities.
+  relations(s) {
+    const n = s.items.length;
+    const EDGE_RE = /^->\s*([^|]+?)\s*(?:\|\s*(.*))?$/;
+    const pos = s.items.map((_, i) => {
+      const a = (i / n) * 2 * Math.PI - Math.PI / 2;
+      return [50 + 40 * Math.cos(a), 50 + 40 * Math.sin(a)];
+    });
+    const idx = new Map(s.items.map((it, i) => [it.head.toLowerCase(), i]));
+    let lines = "", labels = "";
+    s.items.forEach((it, i) => {
+      for (const b of it.body) {
+        const m = b.match(EDGE_RE);
+        if (!m) continue;
+        const j = idx.get(m[1].trim().toLowerCase());
+        if (j === undefined) continue;
+        const [x1, y1] = pos[i], [x2, y2] = pos[j];
+        const d = Math.hypot(x2 - x1, y2 - y1), ux = (x2 - x1) / d, uy = (y2 - y1) / d;
+        const k = 13; // pull ends in so arrowheads sit at card edges, not under them
+        lines += `<line x1="${(x1 + ux * k).toFixed(1)}" y1="${(y1 + uy * k).toFixed(1)}" x2="${(x2 - ux * k).toFixed(1)}" y2="${(y2 - uy * k).toFixed(1)}" marker-end="url(#arr-${slug(s.title)})"/>`;
+        if (m[2]) labels += `<div class="cyc-pos" style="left:${((x1 + x2) / 2).toFixed(1)}%;top:${((y1 + y2) / 2).toFixed(1)}%"><span class="rel-label reveal" style="--d:0.3s">${inline(m[2])}</span></div>`;
+      }
+    });
+    const nodes = s.items
+      .map((it, i) => {
+        const body = it.body.filter((b) => !EDGE_RE.test(b));
+        return `<div class="cyc-pos" style="left:${pos[i][0].toFixed(2)}%;top:${pos[i][1].toFixed(2)}%">
+          <div class="cyc-node card reveal" style="--d:${(i * 0.1).toFixed(2)}s">
+            <div class="node-head">${inline(it.head)}</div>
+            ${body.length ? `<p>${inline(body.join(" "))}</p>` : ""}
+          </div></div>`;
+      })
+      .join("");
+    return el(`<section id="${slug(s.title)}">${headerHTML(s)}
+      <div class="cycle rel">
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          <defs><marker id="arr-${slug(s.title)}" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L8 4 L0 8 z"/></marker></defs>
+          ${lines}
+        </svg>
+        ${labels}${nodes}
+      </div>
+    </section>`);
+  },
+
+  team(s) {
+    const cols = parseInt(s.cfg.cols, 10) || 0;
+    const c = cols || 3;
+    const style = cols ? ` style="grid-template-columns:repeat(${cols},1fr)"` : "";
+    const cards = s.items
+      .map((p, i) => {
+        const photo = (p.body.find((b) => PHOTO_RE.test(b)) || "").match(PHOTO_RE)?.[1] || "";
+        const role = p.body.filter((b) => !PHOTO_RE.test(b)).join(" ");
+        return `<div class="person card reveal" style="--d:${(i % c) * 0.08 + Math.floor(i / c) * 0.06}s">
+          ${avatar(p.head, 56, photo)}
+          <div><div class="t3">${inline(p.head)}</div><p>${inline(role)}</p></div>
+        </div>`;
+      })
+      .join("");
+    return el(`<section id="${slug(s.title)}">${headerHTML(s)}<div class="grid"${style}>${cards}</div></section>`);
+  },
+
+  profile(s) {
+    const cols = s.items
+      .map(
+        (it, i) => `<div class="card reveal" style="--d:${(0.15 + i * 0.1).toFixed(2)}s">
+          <div class="profile-h">${inline(it.head)}</div>
+          <ul>${it.body.filter((b) => b.startsWith("- ")).map((b) => `<li>${inline(b.slice(2))}</li>`).join("")}</ul>
+        </div>`,
+      )
+      .join("");
+    return el(`<section id="${slug(s.title)}">
+      <header>
+        ${s.cfg.eyebrow ? `<p class="eyebrow reveal">${inline(s.cfg.eyebrow)}</p>` : ""}
+        <div class="profile-id reveal">
+          ${avatar(s.title, 96, s.cfg.photo || "")}
+          <div>
+            <h2 class="t2">${inline(s.title)}</h2>
+            <p class="profile-role">${inline(s.cfg.role || "")}</p>
+          </div>
+        </div>
+      </header>
+      <div class="profile-body">
+        <div class="reveal" style="--d:0.1s">${s.lede.map((l) => `<p class="lede">${inline(l)}</p>`).join("")}</div>
+        <div class="profile-cols">${cols}</div>
+      </div>
+    </section>`);
+  },
+
+  pricing(s) {
+    const featured = parseInt(s.cfg.featured, 10) || 0;
+    const cards = s.items
+      .map((t, i) => {
+        const price = t.body.find((b) => !b.startsWith("- ")) || "";
+        const feats = t.body.filter((b) => b.startsWith("- "));
+        return `<div class="tier card reveal${i + 1 === featured ? " featured" : ""}" style="--d:${(i * 0.1).toFixed(2)}s">
+          ${i + 1 === featured ? `<span class="tier-badge">Recommended</span>` : ""}
+          <div class="tier-name">${inline(t.head)}</div>
+          <div class="tier-price">${inline(price)}</div>
+          <ul>${feats.map((f) => `<li>${inline(f.slice(2))}</li>`).join("")}</ul>
+        </div>`;
+      })
+      .join("");
+    return el(`<section id="${slug(s.title)}">${headerHTML(s)}<div class="grid">${cards}</div></section>`);
+  },
+
+  scrub(s) {
+    const n = s.items.length;
+    const chips = s.items
+      .map((it, i) => `<div class="chip"><span class="idx">${String(i + 1).padStart(2, "0")}</span>${inline(it.head)}</div>`)
+      .join("");
+    const staticList = s.items
+      .map((it) => `<li><span class="head">${inline(it.head)}</span><span>${inline(it.body.join(" "))}</span></li>`)
+      .join("");
+    // stages rest at their centers, except the last, which rests at the end
+    // of the travel — so the spine segment reads fully consumed on stage n
+    const markers = s.items
+      .map((_, i) => `<div class="snap-marker" style="top:calc((100% - 100vh) * ${(i === n - 1 ? 1 : (i + 0.5) / n).toFixed(4)})"></div>`)
+      .join("");
+    const sec = el(`<section class="scrub" id="${slug(s.title)}" style="height:${100 + n * 80}vh">
+      ${markers}
+      <div class="stage">
+        ${headerHTML(s)}
+        <div class="seq" style="--n:${n}">
+          <div class="track"><div class="fill"></div></div>
+          <div class="chips">${chips}</div>
+          <p class="blurb"><span class="head"></span><span class="text"></span></p>
+        </div>
+        <ol class="static-stages">${staticList}</ol>
+      </div>
+    </section>`);
+    sec._scrub = { items: s.items, current: -1 };
+    return sec;
+  },
+
+  numbers(s) {
+    const cells = s.items
+      .map(
+        (it, i) => `<div class="reveal" style="--d:${i * 0.12}s">
+          <div class="big-num" data-target="${it.head}">0</div>
+          <div class="big-label">${inline(it.body.join(" "))}</div>
+        </div>`,
+      )
+      .join("");
+    return el(`<section id="${slug(s.title)}">${headerHTML(s)}<div class="numbers-row">${cells}</div></section>`);
+  },
+
+  mirror(s) {
+    const pretty = s.raw
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/^(@\w+:.*)$/gm, '<span class="md-cfg">$1</span>')
+      .replace(/^(#{1,3} .*)$/gm, '<span class="md-h">$1</span>');
+    return el(`<section id="${slug(s.title)}">
+      ${headerHTML(s)}
+      <div class="mirror-grid">
+        <pre class="reveal" style="--d:0.15s">${pretty}</pre>
+        <div class="card reveal" style="--d:0.3s">
+          <div class="t3">Rendered</div>
+          <p>The <code>&lt;pre&gt;</code> on the left is <code>section.raw</code>, kept by the parser. Every section carries its own source — content and view never drift apart, because the view is <em>derived</em>.</p>
+        </div>
+      </div>
+    </section>`);
+  },
+
+  end(s) {
+    return el(`<section id="${slug(s.title)}" class="center">
+      <h2 class="t2 reveal">${inline(s.title)}</h2>
+      ${s.lede.map((l) => `<p class="lede reveal" style="--d:0.1s">${inline(l)}</p>`).join("")}
+      <div class="keys reveal" style="--d:0.25s">
+        <span><kbd>Space</kbd> / <kbd>↓</kbd> next</span>
+        <span><kbd>↑</kbd> previous</span>
+        <span><kbd>Home</kbd> / <kbd>End</kbd> jump</span>
+        <span>spine segments are clickable</span>
+        <span><kbd>A</kbd> annotate</span>
+        <span><kbd>N</kbd> presenter</span>
+        <span><kbd>O</kbd> overview</span>
+        <span><kbd>Cmd</kbd><kbd>P</kbd> → PDF</span>
+      </div>
+    </section>`);
+  },
+};
+
+/* ============================================================
+   ENGINE — render, waypoints, keyboard, spine, scrub, reveals.
+   ============================================================ */
+const deck = parseDeck(document.getElementById("deck-src").textContent);
+const canvas = document.getElementById("canvas");
+const sections = deck.map((s) => {
+  const node = (renderers[s.type] || renderers.prose)(s);
+  canvas.appendChild(node);
+  return { data: s, node };
+});
+
+// deck footer on every slide: brand (from the hero's @brand/@logo), the
+// presentation title, and this slide's page number
+{
+  const brand = deck[0].cfg.brand || "";
+  const logo = deck[0].cfg.logo ? `<img src="${deck[0].cfg.logo}" alt="">` : "";
+  const total = String(sections.length).padStart(2, "0");
+  sections.forEach(({ node }, i) => {
+    const host = node.querySelector(".stage") || node;
+    host.insertAdjacentHTML(
+      "beforeend",
+      `<footer class="deck-footer" aria-hidden="true">
+        <span class="f-brand">${logo}${inline(brand)}</span>
+        <span class="f-title">${inline(deck[0].title)}</span>
+        <span class="f-page">${String(i + 1).padStart(2, "0")} / ${total}</span>
+      </footer>`,
+    );
+  });
+}
+
+// --- static mode (reduced motion now; print via event) --------------------
+// flattens everything to final state: scrubs complete, numbers at target
+function staticMode() {
+  document.documentElement.classList.add("static");
+  sections.forEach(({ node }) => node._scrub && setScrub(node, 1));
+  document.querySelectorAll(".big-num[data-target]").forEach((n) => {
+    n._counted = true;
+    n.textContent = n.dataset.target;
+  });
+}
+const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+if (reducedMotion) staticMode();
+addEventListener("beforeprint", staticMode);
+
+// --- overview (O): zoomed-out grid of every slide, click to jump -----------
+// piggybacks on static mode to flatten scrubs/reveals; zoom keeps layout
+// boxes in sync with the scaled content (transform would leave huge gaps)
+let overview = false;
+function setOverview(on) {
+  overview = on;
+  if (on && inking) setInk(false);
+  document.documentElement.classList.toggle("overview", on);
+  if (on) staticMode();
+  else if (!reducedMotion) document.documentElement.classList.remove("static");
+  buildWaypoints();
+  if (on) scrollTo({ top: 0, behavior: "auto" });
+}
+canvas.addEventListener("click", (e) => {
+  if (!overview) return;
+  const sec = e.target.closest("section");
+  if (!sec) return;
+  setOverview(false);
+  scrollTo({ top: sec.offsetTop, behavior: "auto" });
+  onScroll();
+});
+
+// --- spine: slide segments grouped by chapter ------------------------------
+// a divider opens a chapter (named by @chapter or its title); end and
+// appendix slides stand alone; everything before the first divider is the
+// "Intro" chapter. Collapsed chapters render as ONE segment with an
+// aggregate fill; the current chapter expands into per-slide segments.
+const spine = document.querySelector(".spine");
+const groups = [];
+{
+  let g = null;
+  sections.forEach((sec, i) => {
+    const d = sec.data;
+    const solo = d.type === "end" || !!d.cfg.appendix;
+    if (d.type === "divider" || solo || !g) {
+      g = { label: d.type === "divider" ? d.cfg.chapter || d.title : "", first: i, solo, idx: [] };
+      groups.push(g);
+    }
+    g.idx.push(i);
+    if (solo) g = null; // the next ordinary slide starts a fresh unlabeled group
+  });
+  if (groups[0] && !groups[0].label && !groups[0].solo) groups[0].label = "Intro";
+}
+const segs = new Array(sections.length);
+const tocRows = new Array(sections.length);
+const toc = el(`<div class="toc" aria-label="Table of contents"></div>`);
+const jump = (i) => (e) => {
+  scrollTo({ top: sections[i].node.offsetTop, behavior: smooth() });
+  e.currentTarget.blur(); // keep :focus-within from holding the rail open
+};
+let sepDone = false;
+groups.forEach((gr) => {
+  gr.el = el(`<div class="sgroup${gr.solo ? " solo" : ""}"></div>`);
+  if (!sepDone && sections[gr.first].data.cfg.appendix) {
+    toc.appendChild(el(`<div class="toc-sep"></div>`));
+    sepDone = true;
+  }
+  if (gr.label) {
+    const h = el(`<div class="toc-ch">${inline(gr.label)}</div>`);
+    h.addEventListener("click", jump(gr.first));
+    toc.appendChild(h);
+  }
+  // summary segment: stands in for the whole chapter while collapsed
+  gr.gsum = el(`<button class="gsum" aria-label="${gr.label || sections[gr.first].data.title}"><span class="fill"></span></button>`);
+  if (sections[gr.first].data.cfg.appendix) gr.gsum.classList.add("appendix");
+  gr.gsum.addEventListener("click", jump(gr.first));
+  gr.el.appendChild(gr.gsum);
+  gr.idx.forEach((i) => {
+    const { data } = sections[i];
+    const b = el(`<button aria-label="${data.title}"><span class="fill"></span></button>`);
+    if (data.cfg.appendix) b.classList.add("appendix");
+    b.addEventListener("click", jump(i));
+    gr.el.appendChild(b);
+    segs[i] = b;
+    const row = el(`<button${data.cfg.appendix ? ' class="toc-append"' : ""}><span class="n">${String(i + 1).padStart(2, "0")}</span><span class="t">${inline(data.title)}</span></button>`);
+    row.addEventListener("click", jump(i));
+    toc.appendChild(row);
+    tocRows[i] = row;
+  });
+  spine.appendChild(gr.el);
+});
+spine.appendChild(toc);
+function weighSpine() {
+  sections.forEach(({ node }, i) => (segs[i].style.flex = String(node.offsetHeight)));
+  groups.forEach((gr) =>
+    gr.el.style.setProperty("--w", String(gr.idx.reduce((a, i) => a + sections[i].node.offsetHeight, 0))));
+}
+
+// --- horizontal pager: rebuilt when the active chapter changes -------------
+// opt-in via @pager: top|bottom on the hero; the spine is the default nav
+const pager = document.querySelector(".pager");
+const pagerMode = (deck[0].cfg.pager || "off").toLowerCase();
+if (pagerMode === "top" || pagerMode === "bottom") pager.classList.add(pagerMode);
+let pagerGroup = null;
+function updatePager() {
+  if (pagerMode !== "top" && pagerMode !== "bottom") return; // pager off
+  const gr = groups.find((g) => g.idx.includes(activeIdx));
+  if (gr !== pagerGroup) {
+    pagerGroup = gr;
+    pager.innerHTML = "";
+    pager.appendChild(el(`<span class="p-ch">${inline(gr.label || sections[gr.first].data.title)}</span>`));
+    gr.idx.forEach((i) => {
+      const b = el(`<button aria-label="${sections[i].data.title}"></button>`);
+      b._i = i;
+      b.addEventListener("click", jump(i));
+      pager.appendChild(b);
+    });
+  }
+  pager.querySelectorAll("button").forEach((b) => b.classList.toggle("active", b._i === activeIdx));
+}
+
+// --- waypoints: section tops + scrub stage offsets -------------------------
+let waypoints = [];
+function buildWaypoints() {
+  waypoints = [];
+  const vh = innerHeight;
+  for (const { data, node } of sections) {
+    if (data.cfg.appendix) continue; // keyboard flow never lands on backup slides
+    if (node._scrub) {
+      const n = node._scrub.items.length;
+      const travel = node.offsetHeight - vh;
+      for (let i = 0; i < n; i++) {
+        // must match the snap-marker offsets: centers, but the last at 100%
+        waypoints.push(Math.round(node.offsetTop + (i === n - 1 ? 1 : (i + 0.5) / n) * travel));
+      }
+    } else {
+      waypoints.push(node.offsetTop);
+    }
+  }
+  weighSpine();
+}
+
+const smooth = () => (document.documentElement.classList.contains("static") ? "auto" : "smooth");
+function step(dir) {
+  const y = scrollY;
+  const target =
+    dir > 0
+      ? waypoints.find((w) => w > y + 10)
+      : [...waypoints].reverse().find((w) => w < y - 10);
+  if (target !== undefined) scrollTo({ top: target, behavior: smooth() });
+}
+
+addEventListener("keydown", (e) => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.key === "o" || e.key === "O") { e.preventDefault(); setOverview(!overview); return; }
+  if (overview) { if (e.key === "Escape") setOverview(false); return; }
+  if (e.key === "n" || e.key === "N") { e.preventDefault(); openPresenter(); return; }
+  if (e.key === "a" || e.key === "A") { e.preventDefault(); setInk(!inking); return; }
+  if (inking && e.key === "Escape") { setInk(false); return; }
+  if (inking && (e.key === "c" || e.key === "C")) { clearSlideInk(); return; }
+  if (inking && (e.key === "e" || e.key === "E")) { exportNotes(); return; }
+  // navigation stays live while inking — mark up the whole deck in one pass
+  if ([" ", "ArrowDown", "PageDown"].includes(e.key)) { e.preventDefault(); step(1); }
+  else if (["ArrowUp", "PageUp"].includes(e.key)) { e.preventDefault(); step(-1); }
+  else if (e.key === "Home") { e.preventDefault(); scrollTo({ top: 0, behavior: smooth() }); }
+  else if (e.key === "End") {
+    e.preventDefault();
+    const last = [...sections].reverse().find((s) => !s.data.cfg.appendix);
+    scrollTo({ top: last.node.offsetTop, behavior: smooth() });
+  }
+});
+
+// --- ink: annotation overlay (A draw · C clear slide · A/Esc exit) ---------
+// circle the problem, OS-screenshot to clipboard, paste into a review chat;
+// the badge stamps the section id so the capture self-identifies its slide.
+// strokes anchor to document coords and persist per deck in localStorage,
+// so scrolling stays live and a full-deck markup pass survives a refresh
+const ink = document.getElementById("ink");
+const ictx = ink.getContext("2d");
+const INK_KEY = `webdeck:${slug(deck[0].title)}:ink`;
+let strokes = [];
+try { strokes = JSON.parse(localStorage.getItem(INK_KEY)) || []; } catch {}
+let inking = false, stroke = null;
+
+const saveInk = () => localStorage.setItem(INK_KEY, JSON.stringify(strokes));
+
+function sizeInk() {
+  const dpr = devicePixelRatio || 1;
+  ink.width = innerWidth * dpr;
+  ink.height = innerHeight * dpr;
+  ictx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ictx.lineWidth = 3;
+  ictx.lineCap = ictx.lineJoin = "round";
+  // warm counterpoint token — reads as markup, not part of the design
+  ictx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--accent-2").trim();
+}
+
+function drawInk() {
+  ictx.clearRect(0, 0, innerWidth, innerHeight);
+  for (const s of stroke ? [...strokes, stroke] : strokes) {
+    ictx.beginPath();
+    s.pts.forEach(([x, y], i) => (i ? ictx.lineTo(x, y - scrollY) : ictx.moveTo(x, y - scrollY)));
+    ictx.stroke();
+  }
+}
+
+function inkBadge() {
+  document.querySelector(".ink-badge .n").textContent = `#${currentHash || sections[0].node.id}`;
+}
+
+function setInk(on) {
+  inking = on;
+  document.documentElement.classList.toggle("inking", on);
+  if (on) { sizeInk(); inkBadge(); drawInk(); }
+}
+
+function clearSlideInk() {
+  const n = sections[activeIdx].node;
+  strokes = strokes.filter((s) => s.pts[0][1] < n.offsetTop || s.pts[0][1] >= n.offsetTop + n.offsetHeight);
+  saveInk();
+  drawInk();
+}
+
+ink.addEventListener("pointerdown", (e) => {
+  stroke = { pts: [[e.clientX, e.clientY + scrollY]] };
+  ink.setPointerCapture(e.pointerId);
+});
+ink.addEventListener("pointermove", (e) => {
+  if (!stroke) return;
+  stroke.pts.push([e.clientX, e.clientY + scrollY]);
+  drawInk();
+});
+ink.addEventListener("pointerup", () => {
+  if (stroke && stroke.pts.length > 1) { strokes.push(stroke); saveInk(); }
+  stroke = null;
+  drawInk();
+});
+
+// --- comments: dbl-click drops a pin · E copies a markdown punch list ------
+// each note is keyed by section id, so the exported list tells a review
+// agent exactly which markdown block every item targets
+const NOTES_KEY = `webdeck:${slug(deck[0].title)}:notes`;
+let notes = [];
+try { notes = JSON.parse(localStorage.getItem(NOTES_KEY)) || []; } catch {}
+const saveNotes = () => localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
+
+function renderPins() {
+  document.querySelectorAll(".note-pin").forEach((p) => p.remove());
+  notes.forEach((n, i) => {
+    const sec = document.getElementById(n.sec);
+    if (!sec) return;
+    const pin = el(`<div class="note-pin" style="left:${(n.x * 100).toFixed(2)}%;top:${(n.y * 100).toFixed(2)}%">
+      <span class="pin-n">${i + 1}</span><span class="pin-t">${inline(n.text)}</span></div>`);
+    pin.addEventListener("click", () => { notes.splice(i, 1); saveNotes(); renderPins(); }); // click removes
+    sec.appendChild(pin);
+  });
+}
+renderPins();
+
+ink.addEventListener("dblclick", (e) => {
+  const hit = sections.find(({ node }) =>
+    e.clientY + scrollY >= node.offsetTop && e.clientY + scrollY < node.offsetTop + node.offsetHeight);
+  if (!hit) return;
+  const inp = el(`<input class="note-input" type="text" placeholder="comment — enter saves, esc cancels"
+    style="left:${e.clientX}px;top:${e.clientY}px">`);
+  document.body.appendChild(inp);
+  inp.focus();
+  inp.addEventListener("keydown", (k) => {
+    k.stopPropagation(); // keep deck keys (A, C, space…) out of typing
+    if (k.key === "Enter" && inp.value.trim()) {
+      notes.push({
+        sec: hit.node.id,
+        x: e.clientX / hit.node.offsetWidth,
+        y: (e.clientY + scrollY - hit.node.offsetTop) / hit.node.offsetHeight,
+        text: inp.value.trim(),
+      });
+      saveNotes();
+      renderPins();
+      inp.remove();
+    } else if (k.key === "Escape") inp.remove();
+  });
+  inp.addEventListener("blur", () => inp.remove());
+});
+
+function flashBadge(msg) {
+  const b = document.querySelector(".ink-badge");
+  const orig = b.innerHTML;
+  b.textContent = msg;
+  setTimeout(() => { b.innerHTML = orig; inkBadge(); }, 1600);
+}
+
+function exportNotes() {
+  const md = [`## Deck feedback — ${deck[0].title}`, ...notes.map((n) => `- [#${n.sec}] ${n.text}`)].join("\n");
+  navigator.clipboard.writeText(md).then(
+    () => flashBadge(`${notes.length} comment${notes.length === 1 ? "" : "s"} copied as markdown`),
+    () => flashBadge("clipboard unavailable"),
+  );
+}
+
+// --- presenter window (N): speaker notes, next slide, elapsed timer --------
+// about:blank inherits our origin, so we drive its DOM directly — no
+// BroadcastChannel needed (which is unreliable on file://)
+let pres = null;
+function openPresenter() {
+  if (pres && !pres.closed) { pres.focus(); return; }
+  pres = open("", "deck-presenter", "width=880,height=620");
+  if (!pres) return; // popup blocked
+  const v = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  pres.document.write(`<!doctype html><title>Presenter — ${deck[0].title}</title><style>
+    body { background: ${v("--bg")}; color: ${v("--text")}; font: 14px/1.6 ${v("--font-mono")}; padding: 2rem; display: grid; gap: 1.4rem; align-content: start; }
+    .clock { font-size: 2.4rem; color: ${v("--accent")}; }
+    .cur { font-size: 1.5rem; font-weight: 700; }
+    .notes p { color: ${v("--muted")}; margin: 0.5rem 0; max-width: 60ch; }
+    .next { color: ${v("--faint")}; }
+  </style><div class="clock">00:00</div><div class="cur"></div><div class="notes"></div><div class="next"></div>`);
+  pres.document.close();
+  const t0 = Date.now();
+  const tick = setInterval(() => {
+    if (pres.closed) return clearInterval(tick);
+    const s = Math.floor((Date.now() - t0) / 1000);
+    pres.document.querySelector(".clock").textContent =
+      `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+  }, 1000);
+  updatePresenter();
+}
+function updatePresenter() {
+  if (!pres || pres.closed) return;
+  const d = pres.document, cur = sections[activeIdx].data, nxt = sections[activeIdx + 1];
+  d.querySelector(".cur").textContent = `${String(activeIdx + 1).padStart(2, "0")} · ${cur.title}`;
+  d.querySelector(".notes").innerHTML = cur.notes.length
+    ? cur.notes.map((n) => `<p>${inline(n)}</p>`).join("")
+    : "<p>— no notes —</p>";
+  d.querySelector(".next").textContent = nxt ? `next: ${nxt.data.title}` : "last slide";
+}
+
+// --- scroll loop: spine fill, scrub progress, hash sync --------------------
+function setScrub(node, p) {
+  const s = node._scrub;
+  const idx = Math.max(0, Math.min(s.items.length - 1, Math.floor(p * s.items.length)));
+  if (idx === s.current) return;
+  s.current = idx;
+  node.querySelectorAll(".chip").forEach((c, i) => c.classList.toggle("on", i <= idx));
+  node.querySelector(".track .fill").style.width = `${((idx + 1) / s.items.length) * 100}%`;
+  const blurb = node.querySelector(".blurb");
+  blurb.querySelector(".head").textContent = s.items[idx].head;
+  blurb.querySelector(".text").textContent = s.items[idx].body.join(" ");
+  blurb.classList.remove("swap");
+  void blurb.offsetWidth; // restart entrance animation
+  blurb.classList.add("swap");
+}
+
+let currentHash = "";
+let activeIdx = 0;
+let ticking = false;
+function onScroll() {
+  if (ticking) return;
+  ticking = true;
+  requestAnimationFrame(() => {
+    ticking = false;
+    const y = scrollY, vh = innerHeight;
+    let active = sections[0];
+    sections.forEach(({ node }, i) => {
+      const p = Math.max(0, Math.min(1, (y + vh - node.offsetTop) / node.offsetHeight));
+      segs[i].style.setProperty("--p", p.toFixed(3));
+      if (y >= node.offsetTop - vh * 0.4) { active = sections[i]; activeIdx = i; }
+      if (node._scrub) {
+        const sp = Math.max(0, Math.min(1, (y - node.offsetTop) / (node.offsetHeight - vh)));
+        setScrub(node, sp);
+      }
+    });
+    segs.forEach((sg, i) => sg.classList.toggle("active", sections[i] === active));
+    tocRows.forEach((row, i) => row.classList.toggle("active", i === activeIdx));
+    groups.forEach((gr) => {
+      gr.el.classList.toggle("current", gr.idx.includes(activeIdx));
+      const first = sections[gr.idx[0]].node, last = sections[gr.idx.at(-1)].node;
+      const total = last.offsetTop + last.offsetHeight - first.offsetTop;
+      gr.gsum.style.setProperty("--p", Math.max(0, Math.min(1, (y + vh - first.offsetTop) / total)).toFixed(3));
+    });
+    updatePager();
+    if (active.node.id !== currentHash) {
+      currentHash = active.node.id;
+      history.replaceState(null, "", `#${currentHash}`);
+      updatePresenter();
+    }
+    if (inking) { drawInk(); inkBadge(); }
+  });
+}
+addEventListener("scroll", onScroll, { passive: true });
+addEventListener("resize", () => { buildWaypoints(); if (inking) { sizeInk(); drawInk(); } });
+
+// --- reveals + number count-ups --------------------------------------------
+// enter past 25% → animate in; fully off-screen → reset, so the entrance
+// replays every time the frame comes in (removal happens out of sight, so
+// there is never a visible fade-out)
+const io = new IntersectionObserver(
+  (entries) => {
+    for (const e of entries) {
+      if (e.isIntersecting && e.intersectionRatio >= 0.25) {
+        e.target.classList.add("in");
+        e.target.querySelectorAll(".big-num[data-target]").forEach(countUp);
+      } else if (!e.isIntersecting) {
+        e.target.classList.remove("in");
+        e.target.querySelectorAll(".big-num[data-target]").forEach(resetCount);
+      }
+    }
+  },
+  { threshold: [0, 0.25] },
+);
+document.querySelectorAll(".reveal").forEach((n) => io.observe(n));
+
+function resetCount(node) {
+  if (isNaN(parseInt(node.dataset.target, 10))) return;
+  node._counted = false;
+  node.textContent = "0";
+}
+
+function countUp(node) {
+  if (node._counted) return;
+  node._counted = true;
+  const target = parseInt(node.dataset.target, 10);
+  if (isNaN(target)) { node.textContent = node.dataset.target; return; }
+  const t0 = performance.now(), dur = 900;
+  (function tick(t) {
+    const p = Math.min(1, (t - t0) / dur);
+    node.textContent = String(Math.round(target * (1 - Math.pow(1 - p, 3))));
+    if (p < 1) requestAnimationFrame(tick);
+  })(t0);
+}
+
+// --- init -------------------------------------------------------------------
+buildWaypoints();
+onScroll();
+if (location.hash) {
+  const target = document.getElementById(location.hash.slice(1));
+  if (target) scrollTo({ top: target.offsetTop, behavior: "auto" });
+}
+</script>
+</body>
+</html>
