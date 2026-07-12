@@ -1,0 +1,16 @@
+# Design decisions
+
+Architectural decision records: *why* the design looks the way it does. One file per decision, named `<YYYY-MM-DD>-<decision-slug>.md` so records sort chronologically.
+
+**Records are append-only.** To change an accepted decision, add a new record that supersedes it and flip the old record's status — do not rewrite the original. The history is the point.
+
+## Records
+
+| Record | Status | Description |
+|---|---|---|
+| [<Decision title>](<YYYY-MM-DD>-<decision-slug>.md) | accepted | <one-line description> |
+| [<Question title>](<YYYY-MM-DD>-<question-slug>.md) | open | <one-line description> |
+
+Statuses: `open` (question awaiting a decision) · `accepted` · `superseded` (link the superseding record).
+
+Open records must be resolved before implementation of the features they block can be finalised.

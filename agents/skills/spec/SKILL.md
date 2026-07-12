@@ -30,7 +30,9 @@ specs/
 ├── INDEX.md                          # flat feature list with status
 ├── ARCHITECTURE.md                   # cross-cutting technical design (current state)
 ├── DATA_MODEL.md                     # [optional] entity definitions, fields, types, persistence
-├── DESIGN_DECISIONS.md               # ADR log — decisions made and considerations weighed
+├── ADR/                              # decision records — one file per decision
+│   ├── INDEX.md                      # record list with status and description
+│   └── <YYYY-MM-DD>-<decision-slug>.md
 ├── GAPS.md                           # items needing clarification
 ├── SYNC_REPORT.md                    # [update mode only] report for the current sync run
 ├── features/
@@ -45,7 +47,7 @@ specs/
 
 **`DATA_MODEL.md`** is optional — create it when the project has persistent or structured data worth specifying. It holds the concrete detail: entity definitions, field names, types, validation rules, and persistence notes. `ARCHITECTURE.md` keeps the conceptual domain overview; `DATA_MODEL.md` is where an implementer goes to understand the actual shape of the data.
 
-**`DESIGN_DECISIONS.md`** is the ADR log: *why* the architecture looks the way it does. Each entry records the decision made, the alternatives considered, and the constraints or considerations that drove the choice. Entries are append-only — revise by adding a new entry, not overwriting.
+**`ADR/`** is the decision log: *why* the architecture looks the way it does. One record per file, named `<YYYY-MM-DD>-<decision-slug>.md` (date decided; date raised for open questions) so records sort chronologically. Each record captures the decision made, the alternatives considered, and the constraints that drove the choice; unresolved questions are records with status `open`. `ADR/INDEX.md` lists every record with status and a one-line description, like the main `INDEX.md`. Records are append-only — revise by adding a new record that supersedes the old one, not by rewriting it. Keep `ADR/INDEX.md` in sync whenever records are added or their status changes.
 
 Each feature is a pair of files with the same slug. The `.md` carries the human-readable context; the `.feature` carries the executable Gherkin. They are always created and archived together.
 
@@ -57,7 +59,7 @@ Use `kebab-case` slugs derived from names, not numbers.
 
 **Existing step library is canonical.** When `step_definitions/` exists, use its steps verbatim. Never modify the step library directly. When a scenario requires a step that doesn't exist, write the natural Gherkin phrase and tag the scenario `@draft` — a signal that the step needs implementing before the scenario can run.
 
-**No invention.** Never add behaviour, features, or requirements that weren't confirmed (infer/update) or explicitly discussed (create). Speculation goes to `GAPS.md` or `DESIGN_DECISIONS.md`.
+**No invention.** Never add behaviour, features, or requirements that weren't confirmed (infer/update) or explicitly discussed (create). Speculation goes to `GAPS.md` or an open `ADR/` record.
 
 ## Shared: step definitions handling
 
@@ -183,7 +185,8 @@ All templates are in `references/templates/`. Read each one just-in-time — onl
 | `index.md.template` | all modes |
 | `architecture.md.template` | all modes |
 | `data-model.md.template` | all modes — when the project has persistent or structured data |
-| `design-decisions.md.template` | all modes |
+| `adr.md.template` | all modes — one decision record |
+| `adr-index.md.template` | all modes |
 | `feature.md.template` | all modes — human-readable context |
 | `feature.feature.template` | all modes — executable Gherkin |
 | `gaps.md.template` | all modes |
@@ -210,7 +213,7 @@ Design a spec set from a planning conversation, before any code exists. Specs he
 
 **Vocabulary first.** Establish domain language before writing scenarios. The terms defined here become the terms used in code — consistency from spec to implementation prevents drift before it starts.
 
-**Open questions are first-class.** Design gaps are decisions deferred, not failures. Track them in `DESIGN_DECISIONS.md` with enough context that they can be answered when implementation begins. Papering over uncertainty produces specs that mislead.
+**Open questions are first-class.** Design gaps are decisions deferred, not failures. Track them as open `ADR/` records with enough context that they can be answered when implementation begins. Papering over uncertainty produces specs that mislead.
 
 **MVP scope explicit.** Distinguish what's in scope for the first iteration from what's a later phase.
 
@@ -259,7 +262,7 @@ Synthesise from the conversation (or interview answers from step 0):
 - **Domain vocabulary**: key terms and their definitions as used in the discussion
 - **Scope signals**: anything explicitly said to be in or out of scope
 
-Flag any category with insufficient signal — those become initial Open entries in `DESIGN_DECISIONS.md`.
+Flag any category with insufficient signal — those become initial open records in `ADR/`.
 
 Also identify from the conversation:
 - **Design principles**: any "how we build" rules stated or implied — architectural patterns, coding philosophy, team norms
@@ -277,7 +280,7 @@ Draft the full feature list — each with a one-line user-facing description, th
 
 #### 3. Scaffold
 
-Create directory structure and stub files: `INDEX.md` (stub), `ARCHITECTURE.md` (stub — sections present, content TBD), `DESIGN_DECISIONS.md` (populate with decisions and open questions surfaced so far), `GAPS.md` (empty structure), and `features/` (empty).
+Create directory structure and stub files: `INDEX.md` (stub), `ARCHITECTURE.md` (stub — sections present, content TBD), `ADR/` (INDEX.md plus a record for each decision and open question surfaced so far), `GAPS.md` (empty structure), and `features/` (empty).
 
 If the project has entities, records, or structured data that will be persisted or shared across features, also create `DATA_MODEL.md` (stub). If it is not obvious from the conversation, ask: *"Does this project have a data model — entities or records that need defining?"*
 
@@ -286,7 +289,7 @@ If the project has entities, records, or structured data that will be persisted 
 #### 4. First feature
 
 Generate one feature file in full, with these adaptations:
-- `Technical notes` → populate what's known; use `TBD: <question>` for undecided implementation details; each TBD should also appear in `DESIGN_DECISIONS.md` (Open)
+- `Technical notes` → populate what's known; use `TBD: <question>` for undecided implementation details; each TBD should also appear as an open record in `ADR/`
 - `Relevant principles / constraints` → identify which entries from `ARCHITECTURE.md` shape this feature's implementation; if ARCHITECTURE.md is not yet populated, note what principles apply based on the discussion so far
 - `Notes on confirmation` → rename to `Notes on scope`; flag scenarios that are inferred from discussion (not explicitly stated), edge cases not discussed, or contingent on an open decision
 
@@ -294,7 +297,7 @@ Generate one feature file in full, with these adaptations:
 
 #### 5. Remaining features → Finalise → Report
 
-Generate remaining features. Complete `INDEX.md`. Populate `ARCHITECTURE.md` with the cross-cutting design that emerged from the discussion — key abstractions, module boundaries, and the structural choices that span multiple features. Populate `DESIGN_DECISIONS.md` with all choices and open questions from the session. Report: file tree, domain vocabulary established, count of open decisions, count of spec gaps, count of `@draft` scenarios needing step implementation, recommended next step.
+Generate remaining features. Complete `INDEX.md`. Populate `ARCHITECTURE.md` with the cross-cutting design that emerged from the discussion — key abstractions, module boundaries, and the structural choices that span multiple features. Write an `ADR/` record for each choice and open question from the session and complete `ADR/INDEX.md`. Report: file tree, domain vocabulary established, count of open decisions, count of spec gaps, count of `@draft` scenarios needing step implementation, recommended next step.
 
 ---
 
@@ -355,7 +358,7 @@ Report: what you found, then the full feature list — each with a one-line user
 
 #### 2. Scaffold
 
-Create directory structure and stub files: `INDEX.md` (begins with a plain-English product description, 1–2 sentences, no class names or file paths), `ARCHITECTURE.md` (stub), `DESIGN_DECISIONS.md` (stub), `GAPS.md`, and `features/` (empty).
+Create directory structure and stub files: `INDEX.md` (begins with a plain-English product description, 1–2 sentences, no class names or file paths), `ARCHITECTURE.md` (stub), `ADR/` (INDEX.md stub), `GAPS.md`, and `features/` (empty).
 
 If the codebase has models, schemas, migrations, or structured data types, also create `DATA_MODEL.md` (stub — populate in step 4 from what you've read).
 
@@ -369,7 +372,7 @@ Generate one feature file in full. Apply the confirmed-only rule strictly. Tag a
 
 #### 4. Remaining features → Finalise → Report
 
-Generate remaining features. Complete `INDEX.md`. Populate `ARCHITECTURE.md` by synthesising from the codebase: key abstractions, module structure, system boundaries, and the major structural patterns observed. Populate `DESIGN_DECISIONS.md` with any structural choices that are visible in the code but whose rationale is not self-evident — note them as Decided entries with the evidence as context. Report: file tree, what's covered and what's in GAPS, count of `@draft` scenarios needing step implementation, patterns or inconsistencies noticed (flag, do not fix).
+Generate remaining features. Complete `INDEX.md`. Populate `ARCHITECTURE.md` by synthesising from the codebase: key abstractions, module structure, system boundaries, and the major structural patterns observed. Write `ADR/` records for any structural choices that are visible in the code but whose rationale is not self-evident — status `accepted`, with the evidence as context — and complete `ADR/INDEX.md`. Report: file tree, what's covered and what's in GAPS, count of `@draft` scenarios needing step implementation, patterns or inconsistencies noticed (flag, do not fix).
 
 ---
 
@@ -439,7 +442,7 @@ In order:
 - `INDEX.md`: add candidate features if new uncovered areas suggest them; recalculate progress counts
 - `ARCHITECTURE.md`: update when structural changes are detected — new modules, changed boundaries, revised abstractions; do not touch if the changes are behaviour-only
 - `DATA_MODEL.md`: update when entities are added, removed, or their fields/types change; if `DATA_MODEL.md` doesn't exist but the codebase now has meaningful persistent data, propose creating it
-- `DESIGN_DECISIONS.md`: append new entries for structural choices made since the last sync; never overwrite existing entries
+- `ADR/`: add new records for structural choices made since the last sync; never rewrite existing records; keep `ADR/INDEX.md` in sync. If the spec set has a legacy `DESIGN_DECISIONS.md`, propose migrating it: split each entry into its own `ADR/` record (dated from the entry where possible, otherwise from git history), build `ADR/INDEX.md`, and delete the old file
 - `GAPS.md`: open and newly-discovered gaps only
 
 ### Finalise

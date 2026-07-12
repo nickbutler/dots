@@ -2,7 +2,7 @@
 
 <One or two sentences: what this system is and what problem it solves. No jargon.>
 
-This document describes the current technical design. The reasoning behind structural choices lives in DESIGN_DECISIONS.md — update both when the architecture changes.
+This document describes the current technical design. The reasoning behind structural choices lives in the ADR/ decision records — update both when the architecture changes.
 
 ## Design principles
 

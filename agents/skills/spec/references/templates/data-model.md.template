@@ -2,7 +2,7 @@
 
 <One or two sentences: what data this system owns, and the persistence mechanism (e.g. relational database, document store, in-memory, flat files).>
 
-This document describes the concrete data structures. The conceptual domain overview lives in ARCHITECTURE.md. Decisions about data model design belong in DESIGN_DECISIONS.md.
+This document describes the concrete data structures. The conceptual domain overview lives in ARCHITECTURE.md. Decisions about data model design belong in the ADR/ decision records.
 
 ## Entities
 

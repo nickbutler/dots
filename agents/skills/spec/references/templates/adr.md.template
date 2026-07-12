@@ -1,14 +1,9 @@
-# Design decisions
+# <Decision title>
 
-A log of architectural and design choices made during this project. Each entry records what was decided, the alternatives that were considered, and the constraints or reasoning that drove the choice.
+- **Status**: <open | accepted | superseded by [<file>](<YYYY-MM-DD>-<decision-slug>.md)>
+- **Date**: <date decided; for open records, date raised>
 
-**Entries are append-only.** If a decision changes, add a new entry with a date and a reference to the superseded entry — do not overwrite the original. The history is the point.
-
----
-
-## Decided
-
-### <Decision title> (<date>)
+## Accepted record fields
 
 - **Decision**: <What was chosen, stated as a concrete commitment or constraint.>
 - **Context**: <The situation, requirement, or constraint that forced a choice. Why a decision was needed at all.>
@@ -17,16 +12,14 @@ A log of architectural and design choices made during this project. Each entry r
 - **Consequences**: <What this enables, rules out, or requires going forward. What becomes harder or easier.>
 - **Affects**: <Feature slugs or areas of the codebase this decision shapes.>
 
----
+## Open record fields
 
-## Open
-
-Questions not yet resolved. Each must be answered before implementation of the affected features can be finalised.
-
-### <Question title>
+Use these instead when the record is a question not yet decided (status `open`):
 
 - **Question**: <The specific thing that needs to be decided.>
 - **Why it matters**: <Which feature, scenario, or system property depends on this.>
 - **Options identified**: <Options under consideration, or "not yet discussed".>
 - **Owner**: <Who should resolve this, if known.>
 - **Blocks**: <Feature slug(s) that cannot proceed until this is resolved.>
+
+<!-- A record uses ONE of the two field sets above — delete the other and the section headings. When an open question is resolved, replace the open fields with the accepted fields in the same file and flip the status; the filename keeps the date the question was raised. -->
