@@ -42,14 +42,15 @@ metals.sbt
 .env
 .mcp.json
 .notes.md
+.obsidian/
 .python-version
 .repowise
 .ruby-version
 .sass-cache
 .serena/*
+.slingshot
 .solargraph.yml
 .ssh
-.slingshot
 .todo
 .vimrc_local
 .vscode
