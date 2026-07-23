@@ -1,6 +1,6 @@
 ---
 name: spec
-description: Create, infer, or update a structured spec set (features, Gherkin BDD acceptance criteria, executable .feature files). Three modes — invoke as /spec create (design a spec from conversation before code exists), /spec infer (reverse-engineer a spec from an existing codebase), or /spec update (reconcile existing specs with code changes). Each feature produces a paired .md (user story, context, technical notes) and .feature (executable Gherkin for pytest-bdd or Cucumber). Trigger this skill even when the user does not explicitly name a mode — phrases like "let's plan what we're building" or "spec out the new feature" → create; "document what we have", "write user stories for the existing system", "create a specs folder" → infer; "specs are out of date", "sync the specs", "what's drifted" → update. When mode is ambiguous, auto-detect from context (see Mode dispatch).
+description: Use when the user wants to spec out what to build, document an existing system as specs or user stories, or reconcile specs that have drifted from code. Triggers include "spec out", "let's plan what we're building", "document what we have", "create a specs folder", "sync the specs", "what's drifted", or an explicit /spec create|infer|update. Maintains a specs/ folder of features with Gherkin BDD acceptance criteria; mode is auto-detected when not named.
 ---
 
 # Spec
