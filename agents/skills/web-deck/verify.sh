@@ -55,7 +55,63 @@ if [ "$pages" -ne "$sections" ]; then
 fi
 echo "ok: print paginates 1:1 ($pages pages)"
 
-# 4. rasterize for eyeballing (optional)
+# 4. content actually FITS its page. Page count alone cannot catch this: the
+#    print rules give each section a fixed height with overflow hidden, so an
+#    overlong section still paginates 1:1 while silently clipping whatever
+#    ran past the bottom. Rewrite @media print as @media screen so the real
+#    print rules apply on screen at the page size, then compare each
+#    section's content height against its box.
+python3 - "$deck" "$tmp/fit.html" <<'PY'
+import sys
+src = open(sys.argv[1]).read()
+src = src.replace('@media print', '@media screen')
+# the LAST </body> only: the presenter window builds its own document with
+# document.write, so an earlier </body> lives inside a template literal — and
+# a </script> injected in there closes the engine's own script element
+cut = src.rfind('</body>')
+src = src[:cut] + '''<script>
+/* static mode is what print renders: scrubs flattened, reveals shown */
+if (window.staticMode) staticMode(); else document.documentElement.classList.add("static");
+/* decorative pseudo-element bleed is not content — it is allowed past the edge */
+var s = document.createElement("style");
+s.textContent = "section::before,section::after{display:none!important}";
+document.head.appendChild(s);
+addEventListener("load", function () {
+  var rows = [].map.call(document.querySelectorAll("section"), function (n, i) {
+    return [i + 1, n.id || "?", n.scrollHeight, n.clientHeight];
+  });
+  var d = document.createElement("div");
+  d.id = "__fit";
+  d.textContent = JSON.stringify(rows);
+  document.body.appendChild(d);
+});
+</script>''' + src[cut:]
+open(sys.argv[2], 'w').write(src)
+PY
+"$chrome" --headless --disable-gpu --virtual-time-budget=5000 --window-size=1920,1080 \
+  --dump-dom "file://$tmp/fit.html" > "$tmp/fit-dom.html" 2>/dev/null
+python3 - "$tmp/fit-dom.html" <<'PY' || exit 1
+import json, re, sys
+d = open(sys.argv[1]).read()
+m = re.search(r'<div id="__fit">(.*?)</div>', d, re.S)
+if not m:
+    print("FAIL: fit harness did not run — the measurement build is broken")
+    sys.exit(1)
+rows = json.loads(m.group(1))
+# an empty list is a broken harness, not a clean deck — never pass on it
+if not rows:
+    print("FAIL: fit harness measured 0 sections — the engine did not render")
+    sys.exit(1)
+bad = [r for r in rows if r[2] - r[3] > 4]
+for n, sid, sh, ch in bad:
+    print("FAIL: section %d (#%s) overflows its page by %dpx — it will be clipped in the PDF"
+          % (n, sid, sh - ch))
+if bad:
+    sys.exit(1)
+print("ok: every section fits its page")
+PY
+
+# 5. rasterize for eyeballing (optional)
 if [ -n "$raster" ]; then
   if command -v pdftoppm >/dev/null; then
     mkdir -p "$raster"

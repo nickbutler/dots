@@ -23,9 +23,18 @@
   --accent-2: #f5c04e;      /* warm counterpoint, used sparingly */
   --font-body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+  /* deliberately outside the type system: annotation that is ABOUT the deck
+     rather than part of it. Still a token, so it stays swappable */
+  --font-hand: "Bradley Hand", "Segoe Print", "Comic Sans MS", cursive;
   --radius: 1rem;
   --pad: clamp(2rem, calc(6 * var(--vw)), 6rem);
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* two presentation knobs the owner can dial without touching layout code:
+     body/card/label text size (headings deliberately excluded — the type
+     scale owns those) and entrance-animation pace. A deck read from the back
+     of a large room wants --text-scale ~1.3; a fast talker wants ~0.7 pace */
+  --text-scale: 1;
+  --transition-scale: 1;
   /* viewport units as tokens — never used raw in layout rules. The
      interactive print preview resolves vw/vh against the printer's paper
      size, not the @page px box (same family as the media-query print
@@ -69,9 +78,12 @@ section.center { grid-template-rows: none; align-content: center; }
 section > :not(header) { align-self: center; }
 /* …except grids, which stretch to use the available height */
 section > .grid { align-self: stretch; align-content: stretch; grid-auto-rows: 1fr; }
-/* decorative glow blobs — alternate corners per section */
+/* decorative glow blobs — alternate corners per section. On screen the
+   backdrop canvas does this job (and moves between slides), so these are the
+   static stand-in for print/reduced-motion, where the canvas is hidden */
 section::before {
   content: "";
+  display: none;
   position: absolute;
   width: calc(55 * var(--vmax)); height: calc(55 * var(--vmax));
   border-radius: 50%;
@@ -84,6 +96,7 @@ section:nth-of-type(even)::before {
   top: auto; left: auto; bottom: calc(-20 * var(--vmax)); right: calc(-15 * var(--vmax));
   background: radial-gradient(circle, #f5c04e14, transparent 65%);
 }
+html.static section::before { display: block; }
 
 /* ============================================================
    TYPOGRAPHY — heading levels govern the scale.
@@ -102,7 +115,7 @@ section:nth-of-type(even)::before {
   margin-bottom: 1.2rem;
 }
 .lede {
-  font-size: clamp(1.1rem, calc(1.8 * var(--vw)), 1.5rem);
+  font-size: calc(clamp(1.1rem, calc(1.8 * var(--vw)), 1.5rem) * var(--text-scale));
   color: var(--muted);
   max-width: 58ch;              /* line length constrained locally, never globally */
   margin-top: 1.5rem;
@@ -136,14 +149,14 @@ kbd {
   padding: clamp(1.2rem, calc(2 * var(--vw)), 2rem);
   backdrop-filter: blur(6px);
 }
-.card p { color: var(--muted); margin-top: 0.6rem; font-size: clamp(0.95rem, calc(1.3 * var(--vw)), 1.1rem); }
+.card p { color: var(--muted); margin-top: 0.6rem; font-size: calc(clamp(0.95rem, calc(1.3 * var(--vw)), 1.1rem) * var(--text-scale)); }
 .card ul { list-style: none; padding: 0; margin-top: 0.6rem; }
 .card li {
   position: relative;
   padding-left: 1.1rem;
   margin-top: 0.4rem;
   color: var(--muted);
-  font-size: clamp(0.85rem, calc(1.1 * var(--vw)), 1rem);
+  font-size: calc(clamp(0.85rem, calc(1.1 * var(--vw)), 1rem) * var(--text-scale));
 }
 .card li::before {
   content: "";
@@ -163,11 +176,12 @@ kbd {
 /* reveal-on-entry animation — replays each time the frame comes in:
    .in is added when the element enters and removed once fully off-screen */
 .reveal {
+  --dur: calc(0.6s * var(--transition-scale));
   opacity: 0;
   transform: translateY(26px) scale(0.985);
   filter: blur(10px);
-  transition: opacity 0.6s var(--ease), transform 0.6s var(--ease), filter 0.6s var(--ease);
-  transition-delay: var(--d, 0s);
+  transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease), filter var(--dur) var(--ease);
+  transition-delay: calc(var(--d, 0s) * var(--transition-scale));
 }
 .reveal.in { opacity: 1; transform: none; filter: none; }
 
@@ -262,7 +276,13 @@ html.static .snap-marker { display: none; }
   background-clip: text;
   color: transparent;
 }
-.big-label { color: var(--muted); margin-top: 0.5rem; font-size: clamp(1rem, calc(1.4 * var(--vw)), 1.25rem); }
+.big-label { color: var(--muted); margin-top: 0.5rem; font-size: calc(clamp(1rem, calc(1.4 * var(--vw)), 1.25rem) * var(--text-scale)); }
+/* @hero: yes — the first stat takes the full top row, oversized: one headline
+   number with supporting stats beneath it, instead of a flat row of equals */
+.numbers-row:has(.num-hero) { grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr)); }
+.num-hero { grid-column: 1 / -1; }
+.num-hero .big-num { font-size: clamp(5rem, calc(15 * var(--vw)), 14rem); }
+.num-hero .big-label { font-size: calc(clamp(1.15rem, calc(1.9 * var(--vw)), 1.6rem) * var(--text-scale)); max-width: 40ch; }
 
 /* mirror (source next to rendered) */
 .mirror-grid {
@@ -671,6 +691,347 @@ img.avatar { object-fit: cover; background: var(--surface-2); border: 1px solid 
   border-radius: 0.5rem;
 }
 
+/* ---- chrome tour: annotate the deck's OWN persistent UI ----
+   The targets are real fixed elements at the edges of the viewport, so the
+   notes are absolutely positioned in the section and aimed at them with
+   hand-drawn arrows. Aimed, not touching — that is how a person annotates a
+   screenshot, and it survives the viewport being a different shape. */
+.cx-defs { position: absolute; width: 0; height: 0; }
+/* the top-right corner belongs to the pager note and its arrow — constrain
+   the header rather than tuning a path against one particular title, or a
+   longer heading will run underneath the annotation */
+.chrome-tour header { max-width: 62%; }
+.chrome-tour { --cx-w: clamp(11rem, calc(16 * var(--vw)), 17rem); }
+.cx-note { position: absolute; width: var(--cx-w); z-index: 2; }
+.cx-arrow { position: absolute; overflow: visible; }
+.cx-arrow path { fill: none; stroke: var(--accent-2); stroke-width: 3.6; stroke-linecap: round; stroke-linejoin: round; }
+.cx-h {
+  font-family: var(--font-hand);
+  font-size: calc(clamp(1.15rem, calc(1.75 * var(--vw)), 1.6rem) * var(--text-scale));
+  color: var(--accent-2);
+}
+.cx-note p {
+  color: var(--muted);
+  margin-top: 0.3rem;
+  font-size: calc(clamp(0.85rem, calc(1.1 * var(--vw)), 1.02rem) * var(--text-scale));
+}
+/* One rule per target: where the note sits, and where its arrow hangs off it.
+   The targets are pinned to the VIEWPORT EDGES at fixed offsets, so the notes
+   and arrow lengths are in rem too — a percentage inset drifts away from its
+   target as the window grows, which a fixed-length arrow cannot follow. */
+.cx-spine { left: 10rem; top: 44%; }
+.cx-spine .cx-arrow { right: 100%; top: -0.6rem; width: 8rem; height: 4.4rem; }
+/* the exception: the chips sit at the CENTRE while the note sits at the right
+   edge, so this gap alone scales with the viewport. The arrow spans it in
+   viewport units and stretches (preserveAspectRatio="none") rather than
+   letterboxing. 95vw − note − width puts its LEFT EDGE exactly on 50vw, so a
+   path ending at viewBox x=0 lands on the chips' precise centre at every
+   window size — the one anchor that needs no tuning. Drop below the pill
+   before turning up, or the head parks inside it and the pill hides it */
+.cx-pager { right: calc(5 * var(--vw)); top: 12rem; text-align: center; }
+.cx-pager .cx-arrow { right: 100%; bottom: 100%; width: calc(45 * var(--vw) - var(--cx-w)); height: 8rem; }
+.cx-footer-brand { left: 11rem; bottom: 9rem; }
+.cx-footer-brand .cx-arrow { left: -1.5rem; top: 100%; width: 8rem; height: 5.5rem; }
+/* centred with a margin, NOT translateX(-50%): these notes carry .reveal, and
+   .reveal.in { transform: none } outranks a class selector and would drop it */
+.cx-footer-title { left: 50%; margin-left: calc(var(--cx-w) / -2); bottom: 16rem; text-align: center; }
+.cx-footer-title .cx-arrow { left: 50%; margin-left: -2.2rem; top: 100%; width: 4.4rem; height: 11.5rem; }
+.cx-footer-page { right: 9rem; bottom: 9rem; text-align: right; }
+.cx-footer-page .cx-arrow { right: -1.5rem; top: 100%; width: 8rem; height: 5.5rem; }
+@media screen and (max-width: 60rem) {
+  /* the chrome is still there, but there is no room to point at it politely */
+  .cx-note { position: static; width: auto; margin: 1rem 0 0; text-align: left; }
+  .cx-arrow { display: none; }
+}
+/* print and reduced motion hide the spine and pager, so the arrows would aim
+   at nothing — draw a faint stand-in for each, shown only in static mode */
+.cx-ghost { position: absolute; display: none; border: 1px dashed var(--line); border-radius: 999px; }
+html.static .cx-ghost { display: block; }
+.cx-ghost-spine { left: clamp(0.6rem, calc(1.2 * var(--vw)), 1.4rem); top: 15%; width: 10px; height: 70%; }
+.cx-ghost-pager { left: 50%; transform: translateX(-50%); top: clamp(0.9rem, calc(2.2 * var(--vh)), 1.6rem); width: 9rem; height: 1.9rem; }
+
+/* blank: holding slide — a centred prompt and nothing else, so the room sees
+   no content until you advance off it */
+.begin {
+  font-family: var(--font-mono);
+  font-size: clamp(1.2rem, calc(2.4 * var(--vw)), 2.2rem);
+  letter-spacing: 0.3em;
+  color: var(--faint);
+  text-align: center;
+}
+
+/* @note: — the aside that is neither a bullet nor a speaker note. A single
+   accented strip along the bottom of the slide body */
+.foot-note {
+  margin-top: clamp(1.2rem, calc(3 * var(--vh)), 2rem);
+  border-left: 3px solid var(--accent);
+  padding: 0.55rem 0 0.55rem 1rem;
+  max-width: 90ch;
+  color: var(--muted);
+  font-size: calc(clamp(0.9rem, calc(1.2 * var(--vw)), 1.05rem) * var(--text-scale));
+}
+.foot-note strong { color: var(--text); }
+
+/* item sub-directives (`map:` / `flow:` lines in an item's body) */
+.card-keys { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-top: 0.7rem; }
+.k-then { font-family: var(--font-mono); font-size: 0.7rem; color: var(--faint); }
+.card-keys kbd {
+  font-size: calc(0.85rem * var(--text-scale));
+  padding: 0.2em 0.65em;
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+}
+.map-tag {
+  margin-top: 0.9rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+}
+.mini-flow { margin-top: 1rem; display: grid; gap: 0.35rem; justify-items: center; }
+.mf-stage { display: flex; flex-wrap: wrap; gap: 0.3rem; justify-content: center; }
+.mf-chip {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  padding: 0.24rem 0.62rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+}
+.mf-out .mf-chip { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.mf-arrow { color: var(--accent); font-weight: 700; line-height: 0.9; }
+
+/* @balance: yes — cards keep their natural height and the whole grid centres
+   in the leftover space, with map tags flush to each card's bottom edge.
+   The default (stretch) is right for even content; this is right when one
+   card is much shorter than the others and stretching looks broken */
+.grid.balanced { align-self: center; align-content: center; grid-auto-rows: auto; }
+.grid.balanced .card { display: flex; flex-direction: column; }
+.grid.balanced .map-tag { margin-top: auto; padding-top: 0.9rem; }
+
+/* diagram @fork: k — the last k nodes stack after the final arrow, so a flow
+   can end in parallel outputs instead of one more box in the line */
+.flow .fork { display: grid; gap: clamp(0.6rem, calc(1.2 * var(--vw)), 1.2rem); flex: 1 1 12rem; }
+
+/* formula: ingredient cards joined by +, resolving to = a highlighted result */
+.formula .op {
+  align-self: center;
+  color: var(--accent);
+  font: 700 clamp(1.4rem, calc(2.6 * var(--vw)), 2.4rem) var(--font-mono);
+  user-select: none;
+}
+.formula .node.result { border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); background: var(--accent-soft); }
+.formula .node.result .node-head { color: var(--text); }
+
+/* contract: paired rows under a two-column header — what each side gives */
+.contract { display: grid; gap: clamp(0.6rem, calc(1.4 * var(--vh)), 1rem); margin-top: clamp(1.5rem, calc(3 * var(--vh)), 2.5rem); }
+.con-head, .con-row {
+  display: grid;
+  grid-template-columns: clamp(9rem, calc(18 * var(--vw)), 15rem) 1fr 1fr;
+  gap: clamp(0.6rem, calc(1.2 * var(--vw)), 1.2rem);
+  align-items: stretch;
+}
+.con-head span {
+  font: 700 0.7rem var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--faint);
+  padding-bottom: 0.3rem;
+}
+.con-head .we-h { color: var(--accent); }
+.con-name { display: flex; align-items: center; gap: 0.7rem; }
+.con-name .n { font-family: var(--font-mono); color: var(--accent); font-size: 0.85rem; }
+.con-we { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); background: var(--accent-soft); }
+@media screen and (max-width: 60rem) { .con-head { display: none; } .con-row { grid-template-columns: 1fr; } }
+
+/* bands: horizontal range bars with a median marker. @min/@max scale the
+   axis; @relative reads each median as a % against the @baseline row */
+.bands { display: grid; gap: clamp(0.6rem, calc(1.6 * var(--vh)), 1.1rem); margin-top: clamp(1.5rem, calc(3.5 * var(--vh)), 3rem); }
+.band-row {
+  display: grid;
+  grid-template-columns: clamp(9rem, calc(18 * var(--vw)), 15rem) 1fr clamp(4rem, calc(7 * var(--vw)), 6rem);
+  gap: clamp(0.6rem, calc(1.2 * var(--vw)), 1.2rem);
+  align-items: center;
+}
+.band-label { font-size: calc(clamp(0.85rem, calc(1.2 * var(--vw)), 1rem) * var(--text-scale)); color: var(--muted); }
+.band-row.hi .band-label { color: var(--text); font-weight: 700; }
+.band-track {
+  position: relative;
+  height: clamp(1.4rem, calc(3 * var(--vh)), 1.9rem);
+  border-radius: 0.4rem;
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  border: 1px solid var(--line);
+}
+.band-bar {
+  position: absolute; top: 0.2rem; bottom: 0.2rem;
+  border-radius: 0.3rem;
+  background: color-mix(in srgb, var(--accent) 30%, var(--surface));
+  /* bars grow from their low end when the row enters (row carries --d) */
+  transform: scaleX(0); transform-origin: left;
+  transition: transform 0.6s var(--ease);
+  transition-delay: calc(var(--d, 0s) + 0.15s);
+}
+.band-row.hi .band-bar { background: color-mix(in srgb, var(--accent) 55%, var(--surface)); }
+.band-row.in .band-bar { transform: none; }
+.band-med {
+  position: absolute; top: 0.05rem; bottom: 0.05rem;
+  width: 3px; border-radius: 2px; background: var(--accent);
+  opacity: 0; transition: opacity 0.3s; transition-delay: calc(var(--d, 0s) + 0.6s);
+}
+.band-row.in .band-med { opacity: 1; }
+.band-e {
+  position: absolute; top: 100%; transform: translateX(-50%);
+  font-family: var(--font-mono); font-size: 0.62rem; color: var(--faint); white-space: nowrap;
+}
+.band-val { font-family: var(--font-mono); font-size: clamp(0.8rem, calc(1.1 * var(--vw)), 1rem); color: var(--muted); text-align: right; }
+.band-row.hi .band-val { color: var(--accent); font-weight: 700; }
+html.static .band-bar { transform: none; transition: none; }
+html.static .band-med { opacity: 1; transition: none; }
+
+/* ---- ticker scrubs: a numbered ticker beside a figure that animates ----
+   morph, radar and matrix all share this skeleton — the rows light up one
+   at a time while the figure advances. New scrubbed data-visual = a new
+   figure builder, not a new scroll engine. */
+.fig-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: clamp(1.5rem, calc(3 * var(--vw)), 3rem);
+  align-items: center;
+  margin-top: clamp(1.5rem, calc(3 * var(--vh)), 3rem);
+}
+@media screen and (max-width: 60rem) { .fig-grid { grid-template-columns: 1fr; } }
+.ticks { display: grid; gap: clamp(0.5rem, calc(1.2 * var(--vh)), 0.9rem); align-content: center; }
+.tick {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.9rem;
+  padding: clamp(0.6rem, calc(1.1 * var(--vw)), 1rem);
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  /* rows slide in from the left as they light up, and dim back on reverse */
+  opacity: 0.25;
+  transform: translateX(-14px);
+  transition: opacity 0.45s var(--ease), transform 0.45s var(--ease), background 0.45s, border-color 0.45s;
+}
+.tick.on { opacity: 1; transform: none; }
+.tick.now { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.tk-i { font-family: var(--font-mono); font-size: 0.8rem; color: var(--accent); }
+.tk-h { font-weight: 600; font-size: calc(clamp(0.95rem, calc(1.3 * var(--vw)), 1.15rem) * var(--text-scale)); }
+.tick p { color: var(--muted); margin-top: 0.25rem; font-size: calc(clamp(0.82rem, calc(1.05 * var(--vw)), 0.98rem) * var(--text-scale)); }
+html.static .tick { opacity: 1; transform: none; transition: none; }
+.fig-wrap { display: grid; justify-items: center; gap: 0.8rem; }
+.fig-wrap svg { width: 100%; max-height: min(calc(52 * var(--vh)), 30rem); overflow: visible; }
+.fig-cap {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  color: var(--faint);
+  text-align: center;
+}
+.fig-wrap polygon.morph { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.2; }
+
+/* radar: rings/axes/labels are the static frame, one polygon per profile */
+.radar-ring, .radar-axis { fill: none; stroke: var(--line); stroke-width: 0.5; }
+.radar-label { font-family: var(--font-mono); font-size: 4px; fill: var(--faint); }
+.radar-data { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1; transition: none; }
+
+/* matrix: coverage heatmap — cells fade in per column, values morph per
+   stage, and a labelled window slides across to meet them */
+.mx-bg { fill: var(--surface); opacity: 0; }
+.mx-cell { fill: var(--accent); opacity: 0; }
+.mx-axis { font-family: var(--font-mono); font-size: 11px; fill: var(--faint); }
+.mx-window rect { fill: none; stroke: var(--accent-2); stroke-width: 2; stroke-dasharray: 5 4; }
+.mx-window text { font-family: var(--font-mono); font-size: 12px; fill: var(--accent-2); }
+.mx-window.met rect { stroke-dasharray: none; }
+
+/* orbit: a centre node with a ring of cards turning slowly around it. The
+   rotor spins, each card counter-rotates by the same amount so it stays
+   upright — one animation, no per-card math */
+.orbit { position: relative; aspect-ratio: 1; height: min(calc(58 * var(--vh)), 34rem); margin-inline: auto; }
+.orb-ring { position: absolute; inset: 10%; border: 2px dashed var(--line); border-radius: 50%; }
+.orb-rotor { position: absolute; inset: 0; animation: orbit 60s linear infinite; }
+.orb-counter { animation: orbit 60s linear infinite reverse; }
+@keyframes orbit { to { transform: rotate(360deg); } }
+html.static .orb-rotor, html.static .orb-counter { animation: none; }
+.orb-pos { position: absolute; transform: translate(-50%, -50%); }
+.orb-node { width: max-content; max-width: 11rem; text-align: center; padding: 0.7rem 0.9rem; }
+.orb-node .t3 { font-size: clamp(0.9rem, calc(1.2 * var(--vw)), 1.05rem); }
+.orb-role { color: var(--muted); font-size: 0.75rem; margin-top: 0.15rem; }
+.orb-avatar {
+  display: grid; place-items: center;
+  width: 2.6rem; height: 2.6rem;
+  margin: 0 auto 0.45rem;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  font: 700 0.85rem var(--font-mono);
+  color: var(--accent);
+  overflow: hidden;
+}
+.orb-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.orb-center { width: max-content; max-width: 11rem; text-align: center; }
+.orb-center .t3 { color: var(--accent); }
+
+/* shapes: static side-by-side profile comparison — the un-scrubbed
+   counterpart to radar, for when the point is contrast, not change */
+.shapes-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(13rem, 100%), 1fr));
+  gap: clamp(1rem, calc(2 * var(--vw)), 2rem);
+  margin-top: clamp(1.5rem, calc(3 * var(--vh)), 3rem);
+}
+.shape-card { text-align: center; }
+.shape-card svg { width: 100%; max-height: min(calc(30 * var(--vh)), 15rem); overflow: visible; }
+.shape-card.muted .radar-data { fill: none; stroke: var(--faint); }
+.shape-name { font-weight: 700; margin-top: 0.5rem; }
+.shape-card.answer .shape-name { color: var(--accent); }
+.shape-desc { color: var(--muted); margin-top: 0.35rem; font-size: calc(clamp(0.82rem, calc(1.05 * var(--vw)), 0.98rem) * var(--text-scale)); }
+
+/* media @panel: — the right side becomes a card of numbered rows instead of
+   an image, for a list that should read as a figure */
+.panel-h {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--accent);
+  margin-bottom: 0.9rem;
+}
+.panel-row { display: grid; grid-template-columns: auto 1fr; gap: 0.9rem; align-items: baseline; padding: 0.5rem 0; border-top: 1px solid var(--line); }
+.panel-row:first-of-type { border-top: 0; }
+.panel-row .n { font-family: var(--font-mono); font-size: 0.75rem; color: var(--faint); }
+.panel-row .t { font-size: calc(clamp(0.95rem, calc(1.3 * var(--vw)), 1.15rem) * var(--text-scale)); }
+
+/* ============================================================
+   BACKDROP — one fixed canvas behind every slide, holding a
+   per-slide state that eases to a new one when the slide
+   changes. Idle burns no frames: the rAF loop only runs during
+   the ~1s transition. Hidden in overview and print.
+   ============================================================ */
+#backdrop {
+  position: fixed; inset: 0; z-index: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+}
+/* z-index 0 + placed before <main> in the DOM: sections are positioned with
+   z-index auto, so they paint in the same layer, after it. Giving sections an
+   explicit z-index instead would trap the comment pins under the ink canvas */
+html.overview #backdrop { display: none; }
+
+/* vignette: a soft accent rim hugging the viewport edge. A real element, not
+   body::after, so it can't leak into the presenter window's copy of this CSS */
+#vignette {
+  position: fixed; inset: 0; z-index: 400;
+  pointer-events: none;
+  transition: box-shadow 0.5s var(--ease);
+  box-shadow:
+    inset 0 0 clamp(4rem, 9vmin, 8rem) color-mix(in srgb, var(--accent) 14%, transparent),
+    inset 0 0 clamp(1.2rem, 3vmin, 2.5rem) color-mix(in srgb, var(--accent) 10%, transparent);
+}
+html.overview #vignette { display: none; }
+
 /* deck footer: brand · presentation title · page number, on every slide.
    Rendered per-section (absolute, inside the sticky stage for scrubs) rather
    than position: fixed, so each printed page carries its own page number */
@@ -678,9 +1039,11 @@ img.avatar { object-fit: cover; background: var(--surface-2); border: 1px solid 
   position: absolute;
   left: var(--pad); right: var(--pad);
   bottom: clamp(0.8rem, calc(2.2 * var(--vh)), 1.5rem);
-  display: flex;
+  /* grid, not space-between: with three flex items the middle one only lands
+     on centre when the brand and the page number happen to be equal widths */
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   font-family: var(--font-mono);
   font-size: 0.68rem;
   letter-spacing: 0.08em;
@@ -688,6 +1051,8 @@ img.avatar { object-fit: cover; background: var(--surface-2); border: 1px solid 
   pointer-events: none;
 }
 .deck-footer .f-brand { color: var(--muted); display: flex; align-items: center; gap: 0.5em; }
+.deck-footer .f-title { text-align: center; }
+.deck-footer .f-page { text-align: right; }
 .deck-footer .f-brand img { height: 1.2em; }
 
 /* divider: section separator — large heading, vertically centred */
@@ -965,6 +1330,8 @@ html.overview section {
   scroll-snap-align: none;
 }
 html.overview section:hover { outline-color: var(--accent); }
+/* the slide you came from: thicker and accented, so it reads at 0.16 zoom */
+html.overview section.now { outline-color: var(--accent); outline-width: 28px; }
 html.overview .spine { display: none; }
 
 /* ============================================================
@@ -993,6 +1360,9 @@ html.static .big-num { background: none; color: var(--accent); }
   /* the @page size ÷ 100 — keep in sync with the line above */
   :root { --vw: 19.2px; --vh: 10.8px; --vmax: 19.2px; }
   html { scroll-behavior: auto; }
+  /* print-only text trim: the on-screen --text-scale is tuned for the back of
+     a room; the PDF is read at arm's length */
+  :root { --text-scale: 1; }
   /* exact on body, not just section: the page background lives here, and
      without it Chrome prints white pages with near-white text */
   body { background: var(--bg); print-color-adjust: exact; -webkit-print-color-adjust: exact; }
@@ -1000,8 +1370,14 @@ html.static .big-num { background: none; color: var(--accent); }
      never paints the root canvas background (that's the "Background
      graphics" checkbox, which print-color-adjust cannot override), but it
      does honor exact on element backgrounds */
-  section { break-after: page; min-height: calc(100 * var(--vh)); background: var(--bg); print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-  .spine, .pager, .hero-hint, #ink, .ink-badge, .note-pin, .note-input { display: none !important; }
+  /* height + overflow hidden, NOT min-height: a section that overflows by a
+     few pixels otherwise spills its footer onto a blank second page and
+     breaks the 1-page-per-slide contract verify.sh asserts. Clipping makes
+     the overflow visible in the rasterized pages instead of silent */
+  section { break-after: page; height: calc(100 * var(--vh)); overflow: hidden; background: var(--bg); print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  html.static .scrub { height: calc(100 * var(--vh)) !important; }
+  html.static .scrub .stage { min-height: 0; height: 100%; }
+  .spine, .pager, .hero-hint, #ink, .ink-badge, .note-pin, .note-input, #backdrop, #vignette { display: none !important; }
 }
 </style>
 </head>
@@ -1018,6 +1394,12 @@ html.static .big-num { background: none; color: var(--accent); }
      Inline: **bold**, *em*, `code`.
      ============================================================ -->
 <script type="text/x-deck" id="deck-src">
+@type: blank
+@nav: hide
+## [ ready ]
+Note: A holding slide. The room sees nothing while people file in, and advancing off it starts the title slide's entrance — so the deck opens on motion instead of sitting pre-revealed. `@nav: hide` keeps it out of the TOC panel; it is still on the spine, still in the keyboard flow, still printed.
+
+---
 @type: hero
 @brand: ◆ SAPPHIRE
 @pager: top
@@ -1065,9 +1447,80 @@ Open `index.html`, present. Nothing to install, nothing to build.
 ---
 @type: divider
 @chapter: Engine
-@eyebrow: Part one
+@eyebrow: Part one · The engine
 ## How the engine works
 Dividers open a *chapter*: the spine groups the slides that follow, expands the chapter you're in, and names the collapsed ones on hover.
+Note: The eyebrow carries both nav names either side of a dot. The TOC's chapter heading takes "Part one"; this divider's own row takes "The engine". Every other slide's eyebrow is its nav label outright — eyebrows are written for the audience, titles are often long sentences.
+
+---
+@type: chrome
+@eyebrow: The furniture
+## Five things that never leave the screen
+None of it is decoration. Each piece is doing a job — for you at the front, or for whoever opens the link afterwards.
+Note: Worth 30 seconds out loud. A web deck's navigation is not what a room expects from slideware, and nobody reads a legend.
+### The spine
+to: spine
+One segment per slide, each filling with its own progress. **Hover it** for the table of contents, **click** any segment to jump. Chapters you are not in collapse to a single bar.
+### Chapter chips
+to: pager
+Where you are in the current chapter, one dot per slide. Click to jump. Opt in with `@pager: top` on the hero.
+### The brand mark
+to: footer-brand
+From `@brand:` / `@logo:` on the hero — yours, or a client's alongside it.
+### The deck title
+to: footer-title
+The hero's title, carried on every slide.
+### The page number
+to: footer-page
+Rendered *per slide* rather than fixed, so the printed PDF numbers its own pages correctly.
+
+---
+@type: grid
+@cols: 3
+@balance: yes
+@eyebrow: The controls
+@note: **None of this ships in the PDF** — `Cmd`+`P` still produces the flat deck you would have made in PowerPoint.
+## Everything else is one key away
+No toolbar to find: every mode is a single letter.
+Note: Demonstrate N and A live rather than describing them — it takes fifteen seconds and it is the moment people stop thinking of this as a website.
+### Presenter view
+key: N
+A second window for the other screen: current slide, your notes, what's next, a clock. Click any thumbnail in its sidebar and the deck follows.
+### Overview
+key: O
+Zooms out to a grid of the whole deck. Click a slide to land on it — the fastest answer to *"could you go back to that chart?"*.
+### Annotate
+key: A
+A chalk layer over the live deck. Ink sticks to the document, not the screen, so it survives scrolling and a refresh. **It opens a mode with three keys of its own.**
+### Comments
+key: A → dbl-click
+Inside annotate mode, double-click drops a numbered pin and a typed note; click a pin to remove it.
+### Copy the punch list
+key: A → E
+Every comment as markdown, tagged with its slide id — paste it to an agent and it knows which block to edit.
+### Clear, or leave
+key: A → C · Esc
+`C` wipes the ink on this slide only; `Esc` hands you back to presenting.
+
+---
+@type: grid
+@cols: 2
+@balance: yes
+@eyebrow: Afterwards
+@note: **The deck outlives the meeting.** Nobody needs to be in the room, on your machine, or running the same version of anything.
+## What happens when you close the laptop
+A link, a PDF, or both — and it is all still the one file.
+Note: The pitch here is distribution. A .pptx is a file you email and hope about; this is a URL that lands someone on the exact slide, and a PDF that falls out of the same layout.
+### Every slide has its own URL
+The address bar tracks you as you present, so the link in your hand is always the slide on the screen. Send it and they land exactly there — no "scroll down to about slide twenty".
+map: the hash changed when you arrived here
+### One deck, several audiences
+`@hidden: yes` drops a slide out of the deck entirely — not rendered, not numbered, not navigable. On a chapter divider it takes the whole chapter with it, so the commercials can come out of the internal read-out without forking the file.
+map: this deck is hiding a chapter right now
+### The questions you hope nobody asks
+`@appendix: yes` parks a slide after the close. **Space** never lands on it, but it sits on the spine, it prints with the deck, and a deep link still reaches it.
+### The PDF is the same file
+`Cmd`+`P` turns every section into one vector page. It is the layout that already serves reduced-motion — not a second export path to keep in sync.
 
 ---
 @type: scrub
@@ -1086,14 +1539,15 @@ Every stage boundary is a stop on the keyboard route. Presenters click through; 
 
 ---
 @type: numbers
+@hero: yes
 @eyebrow: Weight
 ## The whole engine
+### 32
+section types in this deck — `@hero: yes` gives the first stat the full top row, oversized, so one number carries the argument and the rest support it
 ### 1
 file to open
 ### 0
 dependencies
-### 23
-section types in this deck
 
 ---
 @type: mirror
@@ -1105,7 +1559,7 @@ This is the actual markdown source of *this section*, rendered by the same parse
 @type: divider
 @chapter: Layouts
 @align: center
-@eyebrow: Layout library
+@eyebrow: Part two · Layout library
 ## Common slide layouts
 One `@type:` directive per layout — same grammar, same tokens, same print. This separator is a layout too: a big centred heading and nothing else.
 
@@ -1395,6 +1849,242 @@ By proposal
 - Quarterly business reviews
 
 ---
+@type: media
+@side: left
+@panel: What the panel replaces
+@eyebrow: Layout · text + panel
+## When the list *is* the figure
+`@panel:` swaps the image frame for a card of numbered rows built from the `###` items — a list that should read as an exhibit rather than as more bullets under the lede.
+- Same layout, same grammar, one directive changed
+- Use it when there is no honest picture to show
+
+### Signals in
+### Consolidated view
+### Recommendation out
+### Action, then measure
+
+---
+@type: formula
+@result: Delivers what neither could alone
+@resulthead: The combination
+@eyebrow: Layout · formula
+## Three things that only work together
+Ingredient cards joined by `+`, resolving to `=` a highlighted result. The slide every "it's the combination that matters" argument wants.
+### Domain expertise
+Knows which problem is worth solving
+### Craft
+Turns the insight into something real
+### Judgement
+Knows when the answer is wrong
+
+---
+@type: bands
+@min: 0
+@max: 120
+@unit: $
+@suffix: k
+@highlight: 0
+@note: **Ranges, not points.** A single number invites an argument about the number; a band shows the spread and lets the median carry the claim.
+@eyebrow: Layout · ranges
+## Where the money actually sits
+Each item is `low mid high`. `@min`/`@max` fix the axis; `@highlight` accents the row the argument is about, and only that row labels its ends.
+### Platform engineer
+95 108 118
+### Backend engineer
+80 92 104
+### Frontend engineer
+78 88 99
+### Analyst
+62 71 82
+
+---
+@type: bands
+@min: 60
+@max: 120
+@relative: yes
+@baseline: 3
+@eyebrow: Layout · ranges, relative
+## The same data, argued as a premium
+`@relative: yes` reads every median as a percentage against the `@baseline` row and hides the absolute values — the honest way to show a gap when the underlying numbers are contested or confidential.
+### Platform engineer
+95 108 118
+### Backend engineer
+80 92 104
+### Frontend engineer
+78 88 99
+### Analyst
+62 71 82
+
+---
+@type: contract
+@you: You provide
+@we: We deliver
+@note: **Each row is a trade, not a request.** Naming the return next to the ask is what turns a wish list into a proposal.
+@eyebrow: Layout · the two-sided ask
+## Three enablers, three returns
+Every item is a row; its `you:` and `we:` sub-directives fill the two columns. Asks and returns, before and after, who-owns-what.
+### Sanctioned tooling
+you: Sandbox environments that clear procurement once, not per team
+we: Hands-on capability instead of shadow IT
+### A deployment path
+you: Buy-in for a route to production
+we: Working software, not prototypes on laptops
+### Time on the calendar
+you: One protected afternoon a fortnight
+we: A visible pipeline of internal work
+
+---
+@type: orbit
+@center: The table
+@eyebrow: Layout · orbit
+## Everyone with a slice of the picture
+A hub with its people turning slowly around it. `@center` names the hub; each item takes an optional `role:` line and an `img:` photo, falling back to generated initials.
+### Ana Kovač
+role: Strategy
+### Rafael Ortiz
+role: Engineering
+### Priya Sharma
+role: Data
+### Tomo Yamada
+role: Platform
+### Leah Cohen
+role: Delivery
+### Marcus Webb
+role: Security
+
+---
+@type: shapes
+@answer: 3
+@eyebrow: Layout · profile comparison
+## Three shapes, one of them ours
+Each card draws a radar polygon from its `shape:` line — same axes, different silhouette. `@answer` emphasises the one you are arguing for and mutes the rest. Use it when the point is contrast; use `radar` when the point is change.
+### The specialist
+One spike, nothing either side of it.
+shape: 0.2 0.95 0.1 0.2 0.35
+### The generalist
+Even, and even everywhere is thin everywhere.
+shape: 0.5 0.45 0.5 0.45 0.5
+### The shape we want
+A real spike standing on real breadth.
+shape: 0.65 0.9 0.6 0.7 0.8
+
+---
+@type: radar
+@axes: Domain · Craft · Adjacent · Fluency · Judgement
+@caption: one polygon, five axes, four stages
+@eyebrow: Layout · scrubbed radar
+## Watch the shape change
+A scrubbed multi-axis chart: the ticker steps through named profiles while the polygon morphs between them. Each item's `shape:` line gives one value per axis, and every stage is a keyboard waypoint — **Space steps through the morph**.
+### Today
+One deep spike and very little else. A complete career, once.
+shape: 0.2 0.95 0.1 0.2 0.3
+### The spike erodes
+The tools move; the spike is worth less each year, unsupported.
+shape: 0.15 0.55 0.12 0.25 0.32
+### Broaden the base
+Fluency and the adjacent crafts come up. Nothing is sacrificed.
+shape: 0.5 0.6 0.5 0.6 0.6
+### Ready for the next thing
+Breadth means someone is always close to where demand lands.
+shape: 0.7 0.85 0.68 0.85 0.8
+
+---
+@type: morph
+@from: 50,6 94,92 50,92 6,92
+@to: 50,6 86,52 50,94 14,52
+@caption: pyramid → diamond
+@eyebrow: Layout · scrubbed morph
+## One figure, two states
+`@from` and `@to` are point lists with the same number of points, lerped across the scrub while the ticker explains why. Any before/after with a shape to it: an org chart flattening, a funnel inverting, a pyramid hollowing out.
+### The shape today
+A broad base of routine work holding up a narrow point of expertise.
+### The base thins
+The routine layer is the first thing automated away.
+### The middle swells
+Work concentrates where judgement and tools meet.
+### A different solid
+Same volume, different centre of gravity — and a different hiring brief.
+
+---
+@type: matrix
+@window: demand
+@x: capabilities measured →
+@y: people
+@caption: illustrative — rows are people, columns are capabilities
+@eyebrow: Layout · scrubbed heatmap
+## Coverage becomes readiness
+A grid whose values animate stage to stage while a labelled window slides across it. Each item's `grid:` line is one row of 0–1 values per entity, rows separated by `/`; `window:` is the column the frame moves to.
+### What we measure today
+A narrow set of columns, and everyone spiky inside it.
+grid: 0.9 0.1 0.1 0.1 0.1 0 0 0 / 0.1 0.9 0.1 0.1 0.1 0 0 0 / 0.1 0.1 0.9 0.1 0.1 0 0 0 / 0.9 0.1 0.1 0.1 0.1 0 0 0
+window: 0
+### Widen the lens
+Measure what actually matters now and the honest gaps appear.
+grid: 0.9 0.1 0.1 0.1 0.1 0.1 0.1 0.1 / 0.1 0.9 0.1 0.1 0.1 0.1 0.1 0.1 / 0.1 0.1 0.9 0.1 0.1 0.1 0.1 0.1 / 0.9 0.1 0.1 0.1 0.1 0.1 0.1 0.1
+window: 0
+### Round out the shape
+Pairing and rotation spread coverage across each row — without blunting the spikes.
+grid: 0.9 0.5 0.5 0.4 0.4 0.4 0.4 0.4 / 0.5 0.9 0.4 0.5 0.4 0.4 0.4 0.4 / 0.4 0.4 0.9 0.5 0.5 0.4 0.4 0.5 / 0.9 0.4 0.5 0.4 0.5 0.5 0.4 0.4
+window: 0
+### Demand moves — we are already there
+When the hot zone shifts, breadth means someone is close. That is readiness.
+grid: 0.9 0.5 0.5 0.4 0.4 0.4 0.4 0.4 / 0.5 0.9 0.4 0.5 0.4 0.4 0.4 0.4 / 0.4 0.4 0.9 0.5 0.5 0.4 0.4 0.5 / 0.9 0.4 0.5 0.4 0.5 0.5 0.4 0.4
+window: 5
+
+---
+@type: diagram
+@fork: 2
+@eyebrow: Layout · flow that forks
+## When the pipeline ends in two places
+`@fork: k` stacks the last *k* nodes after the final arrow, so a flow can end in parallel outputs instead of one more box in the line.
+### Signals
+Market, delivery, client
+### Consolidate
+One picture of capability vs demand
+### Up — leadership
+Gap report and recommendations
+### Out — the business
+Programmes people can actually join
+
+---
+@type: grid
+@cols: 3
+@balance: yes
+@note: **One guardrail across all of it:** every objective has to produce data, and that data has to change what happens next. An objective with no output is a talking shop.
+@eyebrow: Layout · grid, balanced
+## Objectives, with their evidence
+`@balance: yes` lets cards keep their natural height and centres the grid in the leftover space, with `map:` tags flush to every card's bottom edge. Use it when one card is much shorter than the rest and stretching looks broken.
+### Know the skills
+- Fidelity captured across the business
+- A gap report on a fixed cadence
+flow: inputs · signals → one picture → tailored actions
+map: 2030 · measurable impact
+### Make capability normal
+- Client-shaped challenges, not courses
+- Bench time channelled into real work
+flow: challenges → working software
+map: 2030 · rated great by our people
+### Turn it outward
+- Accelerators built in pursuits
+- A public voice that attracts talent
+flow: internal wins → client conversations · hiring
+map: 2030 · the partner clients choose
+
+---
+@type: divider
+@hidden: yes
+@chapter: Cut for this audience
+@eyebrow: Part three · Cut
+## A chapter that isn't here
+`@hidden: yes` on a divider takes the whole chapter with it — every slide up to the next divider or the close.
+
+---
+@type: prose
+@eyebrow: Also cut
+## You will never see this slide
+It is hidden because the divider above it is. Nothing downstream knows it exists: not the page numbers, not the spine, not the agenda, not the presenter window.
+
+---
 @type: end
 ## That's the deck
 Built from one markdown block, one token block, and ~200 lines of engine.
@@ -1413,18 +2103,20 @@ Keyboard flow stops at the closing slide — **Space never lands on an appendix*
 @appendix: yes
 @eyebrow: Appendix · B
 ## Verification loop
-### 30
+### 46
 sections in this deck
-### 30
-PDF pages — asserted equal
+### 46
+PDF pages — asserted equal, and each one checked for clipping
 ### 1
 command — `verify.sh`
 </script>
 
+<canvas id="backdrop" aria-hidden="true"></canvas>
 <nav class="spine" aria-label="Deck progress"></nav>
 <nav class="pager" aria-label="Chapter pages"></nav>
 <main id="canvas"></main>
 <canvas id="ink" aria-hidden="true"></canvas>
+<div id="vignette" aria-hidden="true"></div>
 <div class="ink-badge" aria-hidden="true"><span class="n"></span> annotate — draw · dbl-click comment · <kbd>C</kbd> clear slide · <kbd>E</kbd> copy feedback · <kbd>A</kbd>/<kbd>Esc</kbd> done</div>
 
 <script>
@@ -1534,11 +2226,153 @@ function headerHTML(s, withLede = true) {
   return `<header>${eyebrow}<h2 class="t2 reveal">${inline(s.title)}</h2>${withLede ? ledeHTML(s) : ""}</header>`;
 }
 
-// card body: paragraphs plus dot-bulleted lists from `- ` lines
+// card body: paragraphs, `- ` bullets, and item sub-directives.
+//
+// ITEM SUB-DIRECTIVES — the grammar's second level. `@key:` lines configure a
+// SECTION; a `key:` line inside an item's body is structured data for that
+// ITEM, not prose. The renderer consumes the ones it knows and everything
+// else stays a paragraph, so a new visual affordance costs a prefix, not a
+// parser change. Used here: `map:` (a tag line) and `flow:` (a mini
+// pipeline); elsewhere in the same family, `-> Target | label` (relations),
+// `x,y` (quadrant), `![name](url)` (team/logos), `shape:` (radar/shapes).
+// The one grammar rule that makes sub-directives safe: a body line beginning
+// `lowercaseword: ` is DATA, never prose. Every renderer drops them from the
+// text it prints, so an unconsumed key is invisible rather than leaked. The
+// lowercase-plus-space anchor is what keeps "The lightbulb: …" a sentence.
+const SUBDIR = /^[a-z][a-z0-9-]*:\s/;
+const itemProse = (lines) => lines.filter((l) => !SUBDIR.test(l));
+
 function cardBody(lines) {
-  const ps = lines.filter((l) => !l.startsWith("- ")).map((l) => `<p>${inline(l)}</p>`).join("");
-  const lis = lines.filter((l) => l.startsWith("- ")).map((l) => `<li>${inline(l.slice(2))}</li>`).join("");
-  return ps + (lis ? `<ul>${lis}</ul>` : "");
+  const has = (p) => (l) => l.startsWith(p);
+  const rest = itemProse(lines);
+  const ps = rest.filter((l) => !l.startsWith("- ")).map((l) => `<p>${inline(l)}</p>`).join("");
+  const lis = rest.filter(has("- ")).map((l) => `<li>${inline(l.slice(2))}</li>`).join("");
+  // `flow: a · b → c → d` — chip stages joined by ↓; `·` splits one stage
+  // into parallel chips, the last stage reads as the payoff
+  const flow = lines.filter(has("flow:")).map((l) => {
+    const stages = l.slice(5).split("→").map((t) => t.trim());
+    return `<div class="mini-flow">${stages
+      .map((st, i) => {
+        const chips = st.split("·").map((c) => `<span class="mf-chip">${inline(c.trim())}</span>`).join("");
+        return `${i ? '<div class="mf-arrow">↓</div>' : ""}<div class="mf-stage${i === stages.length - 1 ? " mf-out" : ""}">${chips}</div>`;
+      })
+      .join("")}</div>`;
+  }).join("");
+  // `map: <text>` — a tag pinning the card to something outside the slide
+  // (an objective, an owner, a workstream)
+  const map = lines.filter(has("map:")).map((l) => `<div class="map-tag">→ ${inline(l.slice(4).trim())}</div>`).join("");
+  // `key: N · Esc` — the shortcut a card is about, as real <kbd> chips.
+  // Emitted first so it reads as a label on the heading, not a footnote
+  // `key: A → C · Esc` — `·` separates alternatives, `→` reads as "then", so a
+  // shortcut that only exists inside another mode carries that mode with it
+  const keys = lines.filter(has("key:")).map((l) =>
+    `<div class="card-keys">${l.slice(4).split(/([·→])/).map((t) => {
+      t = t.trim();
+      if (!t || t === "·") return "";
+      return t === "→" ? `<span class="k-then">then</span>` : `<kbd>${inline(t)}</kbd>`;
+    }).join("")}</div>`).join("");
+  return keys + ps + (lis ? `<ul>${lis}</ul>` : "") + flow + map;
+}
+
+// `@note:` — the slide-level aside that is neither a bullet nor a speaker
+// note. Rendered as a strip below the body by the layouts that opt in.
+const noteHTML = (s, d = 0.4) =>
+  s.cfg.note ? `<div class="foot-note reveal" style="--d:${d}s">${inline(s.cfg.note)}</div>` : "";
+
+/* ---- radar geometry: axis i starts at 12 o'clock and runs clockwise;
+   values are 0–1 per axis. Shared by the `radar` and `shapes` layouts. ---- */
+const RADAR = { cx: 75, cy: 61, r: 40 };
+const radarAngle = (i, n) => -Math.PI / 2 + (i * 2 * Math.PI) / n;
+const radarPoints = (vals) =>
+  vals.map((v, i) => {
+    const a = radarAngle(i, vals.length);
+    return `${(RADAR.cx + RADAR.r * v * Math.cos(a)).toFixed(2)},${(RADAR.cy + RADAR.r * v * Math.sin(a)).toFixed(2)}`;
+  }).join(" ");
+function radarFrame(n, labels = []) {
+  const rings = [0.25, 0.5, 0.75, 1]
+    .map((v) => `<path class="radar-ring" d="M${radarPoints(Array(n).fill(v)).split(" ").join(" L")} Z"></path>`)
+    .join("");
+  const axes = Array.from({ length: n }, (_, i) => {
+    const a = radarAngle(i, n);
+    return `<line class="radar-axis" x1="${RADAR.cx}" y1="${RADAR.cy}" x2="${(RADAR.cx + RADAR.r * Math.cos(a)).toFixed(2)}" y2="${(RADAR.cy + RADAR.r * Math.sin(a)).toFixed(2)}"></line>`;
+  }).join("");
+  const text = labels
+    .map((l, i) => {
+      const a = radarAngle(i, labels.length);
+      const cos = Math.cos(a), sin = Math.sin(a);
+      const anchor = cos > 0.3 ? "start" : cos < -0.3 ? "end" : "middle";
+      const x = RADAR.cx + (RADAR.r + 5) * cos;
+      const y = RADAR.cy + (RADAR.r + 5) * sin + (sin > 0.5 ? 4 : sin < -0.5 ? -1.5 : 1.6);
+      return `<text class="radar-label" x="${x.toFixed(2)}" y="${y.toFixed(2)}" text-anchor="${anchor}">${l}</text>`;
+    })
+    .join("");
+  return rings + axes + text;
+}
+// an item carries its profile as a `shape: 0.2 0.9 …` sub-directive line
+const radarProfile = (body) => (body.find((l) => l.startsWith("shape:")) || "").slice(6).trim().split(/\s+/).map(Number);
+
+/* ---- ticker scrub: the shared skeleton behind `morph`, `radar` and
+   `matrix`. A tall wrapper pins a stage; numbered rows light up one per
+   stage while `advance(t)` moves a figure, where t is a FRACTIONAL stage
+   index (2.4 = 40% of the way from stage 2 to stage 3), so the figure
+   animates continuously with the scroll while the rows switch discretely.
+   A new scrubbed data-visual is a new figure + advance(), not a new engine. */
+function tickerScrub(s, figureHTML, wire) {
+  const n = s.items.length;
+  const rows = s.items
+    .map(
+      (it, i) => `<div class="tick">
+        <span class="tk-i">${String(i + 1).padStart(2, "0")}</span>
+        <div><div class="tk-h">${inline(it.head)}</div><p>${inline(itemProse(it.body).join(" "))}</p></div>
+      </div>`,
+    )
+    .join("");
+  // must match buildWaypoints(): stages rest at their centers, the last at
+  // 100% of the travel so the spine segment reads fully consumed
+  const rest = (i) => (i === n - 1 ? 1 : (i + 0.5) / n);
+  const markers = s.items
+    .map((_, i) => `<div class="snap-marker" style="top:calc((100% - 100vh) * ${rest(i).toFixed(4)})"></div>`)
+    .join("");
+  const sec = el(`<section class="scrub" id="${slug(s.title)}" style="height:${100 + n * 70}vh">
+    ${markers}
+    <div class="stage">
+      ${headerHTML(s)}
+      <div class="fig-grid">
+        <div class="ticks">${rows}</div>
+        <div class="fig-wrap">
+          ${figureHTML}
+          ${s.cfg.caption ? `<div class="fig-cap">${inline(s.cfg.caption)}</div>` : ""}
+        </div>
+      </div>
+    </div>
+  </section>`);
+  const ticks = sec.querySelectorAll(".tick");
+  const advance = wire(sec);
+  let current = -1;
+  sec._scrub = {
+    n,
+    set(p) {
+      // scroll progress 0–1 → fractional stage index, held flat before the
+      // first rest point and after the last so the figure lands exactly on
+      // each stage's shape while the slide sits at its snap position
+      let t = 0;
+      if (p >= rest(n - 1)) t = n - 1;
+      else if (p > rest(0)) {
+        let i = 0;
+        while (p > rest(i + 1)) i++;
+        t = i + (p - rest(i)) / (rest(i + 1) - rest(i));
+      }
+      advance(t);
+      const idx = Math.max(0, Math.min(n - 1, Math.round(t)));
+      if (idx === current) return;
+      current = idx;
+      ticks.forEach((r, i) => {
+        r.classList.toggle("on", i <= idx);
+        r.classList.toggle("now", i === idx);
+      });
+    },
+  };
+  return sec;
 }
 
 const renderers = {
@@ -1553,6 +2387,73 @@ const renderers = {
 
   prose(s) {
     return el(`<section id="${slug(s.title)}">${headerHTML(s)}</section>`);
+  },
+
+  // holding slide: a centred prompt and nothing else. Put one first and the
+  // room sees no content while people file in — advancing off it starts the
+  // title slide's entrance, so the deck opens on motion rather than sitting
+  // pre-revealed. Pair with @nav: hide so it stays out of the TOC.
+  // annotate the deck's own persistent chrome. Every deck built this way has
+  // the same furniture, so this slide is reusable verbatim: each item's `to:`
+  // sub-directive names the element it points at, and the renderer owns where
+  // that element lives. Worth putting early — a web deck's navigation is not
+  // what a room expects from slideware, and nobody reads a legend.
+  //
+  // The arrows are hand-drawn twice over: the paths are authored slightly off
+  // true (no mirrored pairs — symmetry reads as machine-made), then an SVG
+  // filter wobbles them further and eats pinholes out of the stroke, which is
+  // what sells chalk. Each target gets its own seed so no two lines match.
+  chrome(s) {
+    const ARROW = {
+      spine:          { box: "0 0 128 70",  d: "M120,58 C88,68 46,56 12,10 M12,10 l5,18 M12,10 l17,4" },
+      // rises off the note, runs left well above the headline, then turns up
+      // to finish at x=0 — the box's left edge, which sits on 50vw. Both
+      // control points of the last cubic share that x, so it arrives dead
+      // vertical and the head points straight at the chips' midpoint.
+      // Symmetric barbs: this box is the only one that stretches, and equal
+      // x-components keep the head balanced as the stretch factor changes
+      pager:          { box: "0 0 448 128", par: "none", d: "M444,110 C450,26 300,16 150,40 C60,58 0,80 0,16 M0,16 l-11,18 M0,16 l11,18" },
+      "footer-brand": { box: "0 0 128 88",  d: "M118,6 C86,14 44,34 10,78 M10,78 l20,-7 M10,78 l3,-20" },
+      "footer-title": { box: "0 0 70 184",  d: "M40,6 C22,48 52,92 34,176 M34,176 l-13,-26 M34,176 l17,-21" },
+      "footer-page":  { box: "0 0 128 88",  d: "M8,6 C42,16 82,36 118,78 M118,78 l-21,-6 M118,78 l-2,-20" },
+    };
+    const id = `chalk-${slug(s.title)}`;
+    const notes = s.items
+      .map((it, i) => {
+        const to = (it.body.find((l) => l.startsWith("to:")) || "").slice(3).trim();
+        const a = ARROW[to] || ARROW.spine;
+        return `<div class="cx-note cx-${to} reveal" style="--d:${(0.35 + i * 0.14).toFixed(2)}s">
+          <svg class="cx-arrow" viewBox="${a.box}"${a.par ? ` preserveAspectRatio="${a.par}"` : ""} aria-hidden="true"><path d="${a.d}" filter="url(#${id})"></path></svg>
+          <div class="cx-h">${inline(it.head)}</div>
+          <p>${inline(itemProse(it.body).join(" "))}</p>
+        </div>`;
+      })
+      .join("");
+    return el(`<section id="${slug(s.title)}" class="chrome-tour">
+      ${headerHTML(s)}
+      <svg class="cx-defs" aria-hidden="true"><defs>
+        <filter id="${id}" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB">
+          <!-- low frequency: pushes the whole line off true, like a wrist -->
+          <feTurbulence type="fractalNoise" baseFrequency="0.022" numOctaves="3" seed="11" result="wob"></feTurbulence>
+          <feDisplacementMap in="SourceGraphic" in2="wob" scale="7" xChannelSelector="R" yChannelSelector="G" result="wobbled"></feDisplacementMap>
+          <!-- high frequency: punched out of the stroke, so it breaks up the
+               way chalk does on the tooth of a board -->
+          <feTurbulence type="fractalNoise" baseFrequency="0.62" numOctaves="2" seed="5" result="grain"></feTurbulence>
+          <feColorMatrix in="grain" type="matrix" result="speck"
+            values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1.6 0 0 0 -0.62"></feColorMatrix>
+          <feComposite in="wobbled" in2="speck" operator="out"></feComposite>
+        </filter>
+      </defs></svg>
+      ${notes}
+      <div class="cx-ghost cx-ghost-spine" aria-hidden="true"></div>
+      <div class="cx-ghost cx-ghost-pager" aria-hidden="true"></div>
+    </section>`);
+  },
+
+  blank(s) {
+    return el(`<section id="${slug(s.title)}" class="center blank">
+      <div class="begin reveal">${inline(s.title)}</div>
+    </section>`);
   },
 
   // section separator: large vertically centred heading; @align: center
@@ -1679,7 +2580,7 @@ const renderers = {
 
   // agenda rows generate themselves from the chapter dividers
   agenda(s) {
-    const chapters = deck.filter((d) => d.type === "divider");
+    const chapters = deck.filter((d) => d.type === "divider" && !d.cfg.hidden);
     const rows = chapters
       .map(
         (c, i) => `<a class="reveal" style="--d:${(i * 0.1).toFixed(2)}s" href="#${slug(c.title)}">
@@ -1703,33 +2604,293 @@ const renderers = {
         </div>`,
       )
       .join("");
-    return el(`<section id="${slug(s.title)}">${headerHTML(s)}<div class="grid"${style}>${cards}</div></section>`);
+    return el(`<section id="${slug(s.title)}">${headerHTML(s)}<div class="grid${s.cfg.balance ? " balanced" : ""}"${style}>${cards}</div>${noteHTML(s)}</section>`);
   },
 
+  // text + figure. @image points at a picture; @panel instead turns the
+  // right side into a card of numbered rows (one per ### item) — a list that
+  // should read as a figure rather than as more bullets.
   media(s) {
-    const img = s.cfg.image ? `<img src="${s.cfg.image}" alt="">` : PLACEHOLDER_SVG;
     const flip = s.cfg.side === "left" ? " flip" : "";
+    const figure = s.cfg.panel
+      ? `<div class="panel card reveal" style="--d:0.2s">
+          <div class="panel-h">${inline(s.cfg.panel)}</div>
+          ${s.items
+            .map(
+              (it, i) => `<div class="panel-row reveal" style="--d:${(0.3 + i * 0.08).toFixed(2)}s">
+                <span class="n">${String(i + 1).padStart(2, "0")}</span><span class="t">${inline(it.head)}</span>
+              </div>`,
+            )
+            .join("")}
+        </div>`
+      : `<div class="media-frame reveal" style="--d:0.2s">${s.cfg.image ? `<img src="${s.cfg.image}" alt="">` : PLACEHOLDER_SVG}</div>`;
     return el(`<section id="${slug(s.title)}">
       ${headerHTML(s, false)}
       <div class="media-grid${flip}">
         <div class="media-copy">${ledeHTML(s)}</div>
-        <div class="media-frame reveal" style="--d:0.2s">${img}</div>
+        ${figure}
       </div>
     </section>`);
   },
 
+  // linear flow; @fork: k stacks the LAST k nodes after the final arrow, so a
+  // pipeline can end in parallel outputs instead of one more box in the line
   diagram(s) {
-    const nodes = s.items
-      .map(
-        (it, i) =>
-          (i ? `<span class="flow-arrow reveal" style="--d:${(i * 0.12 - 0.04).toFixed(2)}s">→</span>` : "") +
-          `<div class="node card reveal" style="--d:${(i * 0.12).toFixed(2)}s">
-            <div class="node-head">${inline(it.head)}</div>
-            <p>${inline(it.body.join(" "))}</p>
-          </div>`,
-      )
+    const fork = parseInt(s.cfg.fork, 10) || 0;
+    const linear = fork ? s.items.slice(0, -fork) : s.items;
+    const forked = fork ? s.items.slice(-fork) : [];
+    const node = (it, i) => `<div class="node card reveal" style="--d:${(i * 0.12).toFixed(2)}s">
+      <div class="node-head">${inline(it.head)}</div>
+      <p>${inline(it.body.join(" "))}</p>
+    </div>`;
+    const nodes = linear
+      .map((it, i) => (i ? `<span class="flow-arrow reveal" style="--d:${(i * 0.12 - 0.04).toFixed(2)}s">→</span>` : "") + node(it, i))
       .join("");
-    return el(`<section id="${slug(s.title)}">${headerHTML(s)}<div class="flow">${nodes}</div></section>`);
+    const forkHTML = forked.length
+      ? `<span class="flow-arrow reveal" style="--d:${(linear.length * 0.12).toFixed(2)}s">→</span>
+         <div class="fork">${forked.map((it, i) => node(it, linear.length + i)).join("")}</div>`
+      : "";
+    return el(`<section id="${slug(s.title)}">${headerHTML(s)}<div class="flow">${nodes}${forkHTML}</div></section>`);
+  },
+
+  // ingredient cards joined by +, resolving to = a highlighted result.
+  // @result is the result card's body, @resulthead its heading.
+  formula(s) {
+    const card = (head, body, i, cls = "") => `<div class="node card${cls} reveal" style="--d:${(i * 0.1).toFixed(2)}s">
+      <div class="node-head">${inline(head)}</div>
+      <p>${inline(body)}</p>
+    </div>`;
+    const op = (sym, i) => `<span class="op reveal" style="--d:${(i * 0.1 + 0.05).toFixed(2)}s">${sym}</span>`;
+    const parts = s.items.map((it, i) => (i ? op("+", i) : "") + card(it.head, it.body.join(" "), i)).join("");
+    const result = s.cfg.result
+      ? op("=", s.items.length) + card(s.cfg.resulthead || "The result", s.cfg.result, s.items.length, " result")
+      : "";
+    return el(`<section id="${slug(s.title)}">${headerHTML(s)}<div class="flow formula">${parts}${result}</div>${noteHTML(s, 0.55)}</section>`);
+  },
+
+  // paired rows under a two-column header: each item names a thing, and its
+  // `you:` / `we:` sub-directives give the two sides. Asks and returns,
+  // before and after, who-owns-what — any "in exchange for" slide.
+  // @you / @we label the columns.
+  contract(s) {
+    const rows = s.items
+      .map((it, i) => {
+        const side = (p) => (it.body.find((b) => b.startsWith(p)) || "").slice(p.length).trim();
+        return `<div class="con-row reveal" style="--d:${(0.1 + i * 0.12).toFixed(2)}s">
+          <div class="con-name"><span class="n">${String(i + 1).padStart(2, "0")}</span><span class="t3">${inline(it.head)}</span></div>
+          <div class="card con-you"><p>${inline(side("you:"))}</p></div>
+          <div class="card con-we"><p>${inline(side("we:"))}</p></div>
+        </div>`;
+      })
+      .join("");
+    return el(`<section id="${slug(s.title)}">${headerHTML(s)}
+      <div class="contract">
+        <div class="con-head reveal"><span></span><span>${inline(s.cfg.you || "You provide")}</span><span class="we-h">${inline(s.cfg.we || "We deliver")}</span></div>
+        ${rows}
+      </div>
+      ${noteHTML(s, 0.55)}
+    </section>`);
+  },
+
+  // horizontal range bars: each item body is `low mid high`. @min/@max scale
+  // the axis, @highlight (0-based) accents a row, @unit/@suffix wrap the
+  // values. @relative reads every median as a % against the @baseline row
+  // instead — the honest way to show a premium without quoting numbers.
+  bands(s) {
+    const min = parseFloat(s.cfg.min) || 0, max = parseFloat(s.cfg.max) || 100;
+    const unit = s.cfg.unit || "", suffix = s.cfg.suffix || "";
+    const pct = (v) => ((v - min) / (max - min)) * 100;
+    const rel = s.cfg.relative !== undefined;
+    const baseIdx = parseInt(s.cfg.baseline, 10) || 0;
+    const vals = s.items.map((it) => it.body.join(" ").split(/\s+/).map(Number));
+    const baseMed = vals[baseIdx][1];
+    const rows = s.items
+      .map((it, i) => {
+        const [lo, mid, hi] = vals[i];
+        const on = String(s.cfg.highlight ?? -1) === String(i);
+        const d = Math.round(((mid - baseMed) / baseMed) * 100);
+        const val = rel
+          ? (i === baseIdx ? "base" : `${d > 0 ? "+" : ""}${d}%`)
+          : `${unit}${mid}${suffix}`;
+        // only the accented row shows its end labels — every row labelled is
+        // noise, and the eye should land on the comparison being argued
+        const ends = on && !rel
+          ? `<span class="band-e" style="left:${pct(lo).toFixed(2)}%">${unit}${lo}${suffix}</span>
+             <span class="band-e" style="left:${pct(hi).toFixed(2)}%">${unit}${hi}${suffix}</span>`
+          : "";
+        return `<div class="band-row reveal${on ? " hi" : ""}" style="--d:${(0.2 + i * 0.1).toFixed(2)}s">
+          <div class="band-label">${inline(it.head)}</div>
+          <div class="band-track">
+            <div class="band-bar" style="left:${pct(lo).toFixed(2)}%;width:${(pct(hi) - pct(lo)).toFixed(2)}%"></div>
+            <div class="band-med" style="left:${pct(mid).toFixed(2)}%"></div>
+            ${ends}
+          </div>
+          <div class="band-val">${val}</div>
+        </div>`;
+      })
+      .join("");
+    return el(`<section id="${slug(s.title)}">${headerHTML(s)}<div class="bands">${rows}</div>${noteHTML(s, 0.55)}</section>`);
+  },
+
+  // a centre node with a ring of cards turning slowly around it. @center
+  // names the hub; each item is a card, with an optional `role:` line and an
+  // `img:` line for a photo (initials otherwise). The rotor spins and each
+  // card counter-rotates by the same amount, so they stay upright.
+  orbit(s) {
+    const n = s.items.length;
+    const pt = (frac, r = 40) => {
+      const a = frac * 2 * Math.PI - Math.PI / 2;
+      return [50 + r * Math.cos(a), 50 + r * Math.sin(a)];
+    };
+    const people = s.items.map((it) => ({
+      head: it.head,
+      img: (it.body.find((l) => l.startsWith("img:")) || "").slice(4).trim(),
+      role: (it.body.find((l) => l.startsWith("role:")) || "").slice(5).trim(),
+      initials: it.head.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase(),
+    }));
+    const nodes = people
+      .map((p, i) => {
+        const [x, y] = pt(i / n);
+        return `<div class="orb-pos" style="left:${x.toFixed(2)}%;top:${y.toFixed(2)}%">
+          <div class="orb-counter">
+            <div class="orb-node card reveal" style="--d:${(0.15 + i * 0.07).toFixed(2)}s">
+              <div class="orb-avatar">${p.img ? `<img alt="">` : p.initials}</div>
+              <div class="t3">${inline(p.head)}</div>
+              ${p.role ? `<div class="orb-role">${inline(p.role)}</div>` : ""}
+            </div>
+          </div>
+        </div>`;
+      })
+      .join("");
+    const sec = el(`<section id="${slug(s.title)}">
+      ${headerHTML(s)}
+      <div>
+        <div class="orbit">
+          <div class="orb-ring"></div>
+          <div class="orb-rotor">${nodes}</div>
+          <div class="orb-pos" style="left:50%;top:50%">
+            <div class="orb-center card reveal"><div class="t3">${inline(s.cfg.center || "")}</div></div>
+          </div>
+        </div>
+      </div>
+    </section>`);
+    // src via the property, not the attribute — paths carry characters HTML
+    // would mangle (& in query strings especially)
+    const imgs = sec.querySelectorAll(".orb-avatar img");
+    people.filter((p) => p.img).forEach((p, i) => { imgs[i].src = p.img; });
+    return sec;
+  },
+
+  // static profile comparison: one card per item, each with a radar polygon
+  // from its `shape:` line. The un-scrubbed counterpart to `radar`, for when
+  // the point is contrast rather than change. @answer (1-based) emphasises a
+  // card; @axes labels nothing here — the shapes are read as silhouettes.
+  shapes(s) {
+    const answer = parseInt(s.cfg.answer, 10) || s.items.length;
+    const cards = s.items
+      .map((it, i) => {
+        const prof = radarProfile(it.body);
+        const desc = itemProse(it.body).join(" ");
+        return `<div class="shape-card ${i + 1 === answer ? "answer" : "muted"} reveal" style="--d:${(i * 0.12).toFixed(2)}s">
+          <svg viewBox="0 0 150 122" aria-hidden="true">${radarFrame(prof.length)}<polygon class="radar-data" points="${radarPoints(prof)}"></polygon></svg>
+          <div class="shape-name">${inline(it.head)}</div>
+          <p class="shape-desc">${inline(desc)}</p>
+        </div>`;
+      })
+      .join("");
+    return el(`<section id="${slug(s.title)}">${headerHTML(s)}<div class="shapes-row">${cards}</div>${noteHTML(s, 0.5)}</section>`);
+  },
+
+  // scrubbed radar: the ticker steps through named profiles while the polygon
+  // morphs between them. @axes names the spokes (· separated); each item
+  // carries its profile as a `shape: 0.2 0.9 …` line, one value per axis.
+  radar(s) {
+    const axes = (s.cfg.axes || "").split("·").map((a) => a.trim()).filter(Boolean);
+    const profiles = s.items.map((it) => radarProfile(it.body));
+    const n = axes.length || profiles[0].length;
+    const figure = `<svg viewBox="0 0 150 122" aria-hidden="true">
+      ${radarFrame(n, axes)}
+      <polygon class="radar-data" points="${radarPoints(profiles[0])}"></polygon>
+    </svg>`;
+    return tickerScrub(s, figure, (sec) => {
+      const poly = sec.querySelector(".radar-data");
+      return (t) => {
+        // lerp between the bracketing profiles, so the shape is mid-morph
+        // whenever the scroll sits between two stages
+        const i = Math.min(profiles.length - 2, Math.floor(t));
+        const u = Math.max(0, Math.min(1, t - i));
+        const a = profiles[i] || profiles[0], b = profiles[i + 1] || a;
+        poly.setAttribute("points", radarPoints(a.map((v, k) => v + (b[k] - v) * u)));
+      };
+    });
+  },
+
+  // scrubbed polygon morph: @from and @to are `x,y x,y …` point lists with
+  // the SAME number of points, lerped across the whole scrub. The ticker
+  // narrates why the shape is changing.
+  morph(s) {
+    const pts = (v) => (v || "").trim().split(/\s+/).map((p) => p.split(",").map(Number));
+    const from = pts(s.cfg.from), to = pts(s.cfg.to);
+    const at = (u) => from.map((p, i) => [p[0] + (to[i][0] - p[0]) * u, p[1] + (to[i][1] - p[1]) * u].map((x) => x.toFixed(2)).join(",")).join(" ");
+    const figure = `<svg viewBox="0 0 100 100" aria-hidden="true"><polygon class="morph" points="${at(0)}"></polygon></svg>`;
+    return tickerScrub(s, figure, (sec) => {
+      const poly = sec.querySelector("polygon.morph");
+      const span = Math.max(1, s.items.length - 1);
+      return (t) => poly.setAttribute("points", at(t / span));
+    });
+  },
+
+  // scrubbed coverage heatmap: rows are entities, columns are attributes.
+  // Each item is a stage; its `grid:` sub-directive gives one row of 0–1
+  // values per entity, space-separated, rows separated by `/`. A labelled
+  // window slides to the column named by the stage's `window:` line.
+  matrix(s) {
+    const stages = s.items.map((it) => ({
+      grid: (it.body.find((l) => l.startsWith("grid:")) || "").slice(5).trim().split("/").map((r) => r.trim().split(/\s+/).map(Number)),
+      win: parseFloat((it.body.find((l) => l.startsWith("window:")) || "").slice(7)) || 0,
+    }));
+    const R = stages[0].grid.length, C = stages[0].grid[0].length;
+    const cell = 38, pitch = 44, x0 = 26, y0 = 40;
+    const winW = 3 * pitch - (pitch - cell) + 8;
+    const winX = (c) => x0 + c * pitch - 4;
+    let cells = "";
+    for (let r = 0; r < R; r++)
+      for (let c = 0; c < C; c++) {
+        const x = x0 + c * pitch, y = y0 + r * pitch;
+        cells += `<rect class="mx-bg" x="${x}" y="${y}" width="${cell}" height="${cell}" rx="6"></rect>
+          <rect class="mx-cell" data-r="${r}" data-c="${c}" x="${x}" y="${y}" width="${cell}" height="${cell}" rx="6"></rect>`;
+      }
+    const w = C * pitch - (pitch - cell), h = R * pitch - (pitch - cell);
+    const figure = `<svg viewBox="0 0 ${x0 + w + 14} ${y0 + h + 34}" aria-hidden="true">
+      ${cells}
+      <g class="mx-window">
+        <rect x="${winX(stages[0].win)}" y="${y0 - 8}" width="${winW}" height="${h + 16}" rx="9"></rect>
+        <text x="${winX(stages[0].win) + winW / 2}" y="${y0 - 16}" text-anchor="middle">${inline(s.cfg.window || "demand")}</text>
+      </g>
+      <text class="mx-axis" x="${x0 + w / 2}" y="${y0 + h + 26}" text-anchor="middle">${inline(s.cfg.x || "")}</text>
+      <text class="mx-axis" x="12" y="${y0 + h / 2}" text-anchor="middle" transform="rotate(-90 12 ${y0 + h / 2})">${inline(s.cfg.y || "")}</text>
+    </svg>`;
+    return tickerScrub(s, figure, (sec) => {
+      const data = sec.querySelectorAll(".mx-cell");
+      const bg = sec.querySelectorAll(".mx-bg");
+      const win = sec.querySelector(".mx-window");
+      const wRect = win.querySelector("rect"), wText = win.querySelector("text");
+      return (t) => {
+        const i = Math.min(stages.length - 2, Math.floor(t));
+        const u = Math.max(0, Math.min(1, t - i));
+        const a = stages[i] || stages[0], b = stages[i + 1] || a;
+        data.forEach((d, k) => {
+          const r = +d.dataset.r, c = +d.dataset.c;
+          const v = a.grid[r][c] + (b.grid[r][c] - a.grid[r][c]) * u;
+          d.style.opacity = v;
+          bg[k].style.opacity = v > 0.02 ? 0.55 : 0;
+        });
+        const x = winX(a.win + (b.win - a.win) * u);
+        wRect.setAttribute("x", x.toFixed(1));
+        wText.setAttribute("x", (x + winW / 2).toFixed(1));
+        win.classList.toggle("met", t >= stages.length - 1.03);
+      };
+    });
   },
 
   timeline(s) {
@@ -1916,20 +3077,42 @@ const renderers = {
         <ol class="static-stages">${staticList}</ol>
       </div>
     </section>`);
-    sec._scrub = { items: s.items, current: -1 };
+    // every scrubbed section exposes the same contract — `n` stages and a
+    // `set(progress)` — so the engine never learns which kind it is
+    const chipEls = sec.querySelectorAll(".chip");
+    const fill = sec.querySelector(".track .fill");
+    const blurb = sec.querySelector(".blurb");
+    let current = -1;
+    sec._scrub = {
+      n,
+      set(p) {
+        const idx = Math.max(0, Math.min(n - 1, Math.floor(p * n)));
+        if (idx === current) return;
+        current = idx;
+        chipEls.forEach((c, i) => c.classList.toggle("on", i <= idx));
+        fill.style.width = `${((idx + 1) / n) * 100}%`;
+        blurb.querySelector(".head").textContent = s.items[idx].head;
+        blurb.querySelector(".text").textContent = s.items[idx].body.join(" ");
+        blurb.classList.remove("swap");
+        void blurb.offsetWidth; // restart the entrance animation
+        blurb.classList.add("swap");
+      },
+    };
     return sec;
   },
 
+  // @hero: yes — the first stat takes the full top row, oversized: one
+  // headline number carrying the argument, the rest supporting it
   numbers(s) {
     const cells = s.items
       .map(
-        (it, i) => `<div class="reveal" style="--d:${i * 0.12}s">
+        (it, i) => `<div class="reveal${s.cfg.hero === "yes" && i === 0 ? " num-hero" : ""}" style="--d:${i * 0.12}s">
           <div class="big-num" data-target="${it.head}">0</div>
           <div class="big-label">${inline(it.body.join(" "))}</div>
         </div>`,
       )
       .join("");
-    return el(`<section id="${slug(s.title)}">${headerHTML(s)}<div class="numbers-row">${cells}</div></section>`);
+    return el(`<section id="${slug(s.title)}">${headerHTML(s)}<div class="numbers-row">${cells}</div>${noteHTML(s, 0.5)}</section>`);
   },
 
   mirror(s) {
@@ -1972,17 +3155,38 @@ const renderers = {
    ============================================================ */
 const deck = parseDeck(document.getElementById("deck-src").textContent);
 const canvas = document.getElementById("canvas");
-const sections = deck.map((s) => {
-  const node = (renderers[s.type] || renderers.prose)(s);
-  canvas.appendChild(node);
-  return { data: s, node };
-});
+// the hero carries the deck-level directives and the presentation's name —
+// deck[0] may be a holding slide, whose title is not the deck's title
+const hero = deck.find((d) => d.type === "hero") || deck[0];
+const deckTitle = hero.title;
+
+// @hidden: yes — the section stays in the content layer but is never
+// rendered. Everything downstream (page numbers, waypoints, spine, pager,
+// overview, presenter) is built from `sections`, so this one filter hides it
+// everywhere. On a divider it cascades: the whole chapter — every section up
+// to the next divider or the close — goes with it, and the agenda drops the
+// row. Cutting a chapter for one audience without deleting the copy.
+{
+  let hiding = false;
+  for (const s of deck) {
+    if (s.type === "divider") hiding = !!s.cfg.hidden;
+    else if (s.type === "end") hiding = false;
+    if (hiding) s.cfg.hidden = "yes";
+  }
+}
+const sections = deck
+  .filter((s) => !s.cfg.hidden)
+  .map((s) => {
+    const node = (renderers[s.type] || renderers.prose)(s);
+    canvas.appendChild(node);
+    return { data: s, node };
+  });
 
 // deck footer on every slide: brand (from the hero's @brand/@logo), the
 // presentation title, and this slide's page number
 {
-  const brand = deck[0].cfg.brand || "";
-  const logo = deck[0].cfg.logo ? `<img src="${deck[0].cfg.logo}" alt="">` : "";
+  const brand = hero.cfg.brand || "";
+  const logo = hero.cfg.logo ? `<img src="${hero.cfg.logo}" alt="">` : "";
   const total = String(sections.length).padStart(2, "0");
   sections.forEach(({ node }, i) => {
     const host = node.querySelector(".stage") || node;
@@ -1990,7 +3194,7 @@ const sections = deck.map((s) => {
       "beforeend",
       `<footer class="deck-footer" aria-hidden="true">
         <span class="f-brand">${logo}${inline(brand)}</span>
-        <span class="f-title">${inline(deck[0].title)}</span>
+        <span class="f-title">${inline(deckTitle)}</span>
         <span class="f-page">${String(i + 1).padStart(2, "0")} / ${total}</span>
       </footer>`,
     );
@@ -2001,7 +3205,7 @@ const sections = deck.map((s) => {
 // flattens everything to final state: scrubs complete, numbers at target
 function staticMode() {
   document.documentElement.classList.add("static");
-  sections.forEach(({ node }) => node._scrub && setScrub(node, 1));
+  sections.forEach(({ node }) => node._scrub && node._scrub.set(1));
   document.querySelectorAll(".big-num[data-target]").forEach((n) => {
     n._counted = true;
     n.textContent = n.dataset.target;
@@ -2015,22 +3219,34 @@ addEventListener("beforeprint", staticMode);
 // piggybacks on static mode to flatten scrubs/reveals; zoom keeps layout
 // boxes in sync with the scaled content (transform would leave huge gaps)
 let overview = false;
+// the slide the grid is "about": what you zoomed out from, or what you clicked
+let overviewIdx = 0;
 function setOverview(on) {
+  if (on) overviewIdx = activeIdx;
   overview = on;
   if (on && inking) setInk(false);
   document.documentElement.classList.toggle("overview", on);
+  // highlight it — a wall of identical tiles loses "where am I", which is the
+  // one question the overview exists to answer
+  sections.forEach(({ node }, i) => node.classList.toggle("now", on && i === overviewIdx));
   if (on) staticMode();
   else if (!reducedMotion) document.documentElement.classList.remove("static");
-  buildWaypoints();
-  if (on) scrollTo({ top: 0, behavior: "auto" });
+  buildWaypoints();   // forces layout, so the offsetTop read below is the new one
+  // behavior MUST be "instant", never "auto": auto defers to CSS
+  // scroll-behavior, which is smooth here — and a smooth scroll across a whole
+  // deck races the mandatory scroll-snap that leaving overview re-enables,
+  // landing you on whatever tile snap grabs first. Entering only looked safe
+  // because static mode had disabled snapping.
+  const node = sections[overviewIdx].node;
+  scrollTo({ top: on ? Math.max(0, node.offsetTop - innerHeight / 3) : node.offsetTop, behavior: "instant" });
+  onScroll();
 }
 canvas.addEventListener("click", (e) => {
   if (!overview) return;
   const sec = e.target.closest("section");
   if (!sec) return;
+  overviewIdx = sections.findIndex((s) => s.node === sec);
   setOverview(false);
-  scrollTo({ top: sec.offsetTop, behavior: "auto" });
-  onScroll();
 });
 
 // --- spine: slide segments grouped by chapter ------------------------------
@@ -2054,11 +3270,33 @@ const groups = [];
   });
   if (groups[0] && !groups[0].label && !groups[0].solo) groups[0].label = "Intro";
 }
+// nav labels come from the eyebrow, which is written for the audience —
+// titles are often long sentences. A chapter divider's eyebrow carries both
+// names either side of a dot ("Part one · Engine"): the TOC's chapter heading
+// takes the part before, the divider's own row takes the part after.
+const preDot = (t) => t.split("·")[0].trim();
+const postDot = (t) => t.split("·").slice(1).join("·").trim();
+const navLabel = (data) => {
+  const eb = data.cfg.eyebrow;
+  if (!eb) return data.title;
+  return data.type === "divider" && eb.includes("·") ? postDot(eb) : eb;
+};
+const chapterHead = (gr) => {
+  const lead = sections[gr.first].data;
+  return lead.type === "divider" && lead.cfg.eyebrow && lead.cfg.eyebrow.includes("·")
+    ? preDot(lead.cfg.eyebrow)
+    : gr.label;
+};
+
 const segs = new Array(sections.length);
 const tocRows = new Array(sections.length);
 const toc = el(`<div class="toc" aria-label="Table of contents"></div>`);
-const jump = (i) => (e) => {
+function gotoSlide(i) {
+  i = Math.max(0, Math.min(sections.length - 1, i));
   scrollTo({ top: sections[i].node.offsetTop, behavior: smooth() });
+}
+const jump = (i) => (e) => {
+  gotoSlide(i);
   e.currentTarget.blur(); // keep :focus-within from holding the rail open
 };
 let sepDone = false;
@@ -2069,7 +3307,7 @@ groups.forEach((gr) => {
     sepDone = true;
   }
   if (gr.label) {
-    const h = el(`<div class="toc-ch">${inline(gr.label)}</div>`);
+    const h = el(`<div class="toc-ch">${inline(chapterHead(gr))}</div>`);
     h.addEventListener("click", jump(gr.first));
     toc.appendChild(h);
   }
@@ -2085,7 +3323,12 @@ groups.forEach((gr) => {
     b.addEventListener("click", jump(i));
     gr.el.appendChild(b);
     segs[i] = b;
-    const row = el(`<button${data.cfg.appendix ? ' class="toc-append"' : ""}><span class="n">${String(i + 1).padStart(2, "0")}</span><span class="t">${inline(data.title)}</span></button>`);
+    // the panel omits chapter dividers (already shown as the heading above
+    // their slides) and anything marked @nav: hide — a holding slide or an
+    // epilogue you reach by advancing past the end, not by browsing to it.
+    // Both stay in the deck, the flow, the spine and the print.
+    if (data.type === "divider" || data.cfg.nav === "hide") return;
+    const row = el(`<button${data.cfg.appendix ? ' class="toc-append"' : ""}><span class="n">${String(i + 1).padStart(2, "0")}</span><span class="t">${inline(navLabel(data))}</span></button>`);
     row.addEventListener("click", jump(i));
     toc.appendChild(row);
     tocRows[i] = row;
@@ -2102,7 +3345,7 @@ function weighSpine() {
 // --- horizontal pager: rebuilt when the active chapter changes -------------
 // opt-in via @pager: top|bottom on the hero; the spine is the default nav
 const pager = document.querySelector(".pager");
-const pagerMode = (deck[0].cfg.pager || "off").toLowerCase();
+const pagerMode = (hero.cfg.pager || "off").toLowerCase();
 if (pagerMode === "top" || pagerMode === "bottom") pager.classList.add(pagerMode);
 let pagerGroup = null;
 function updatePager() {
@@ -2130,7 +3373,7 @@ function buildWaypoints() {
   for (const { data, node } of sections) {
     if (data.cfg.appendix) continue; // keyboard flow never lands on backup slides
     if (node._scrub) {
-      const n = node._scrub.items.length;
+      const n = node._scrub.n;
       const travel = node.offsetHeight - vh;
       for (let i = 0; i < n; i++) {
         // must match the snap-marker offsets: centers, but the last at 100%
@@ -2180,7 +3423,7 @@ addEventListener("keydown", (e) => {
 // so scrolling stays live and a full-deck markup pass survives a refresh
 const ink = document.getElementById("ink");
 const ictx = ink.getContext("2d");
-const INK_KEY = `webdeck:${slug(deck[0].title)}:ink`;
+const INK_KEY = `webdeck:${slug(deckTitle)}:ink`;
 let strokes = [];
 try { strokes = JSON.parse(localStorage.getItem(INK_KEY)) || []; } catch {}
 let inking = false, stroke = null;
@@ -2242,7 +3485,7 @@ ink.addEventListener("pointerup", () => {
 // --- comments: dbl-click drops a pin · E copies a markdown punch list ------
 // each note is keyed by section id, so the exported list tells a review
 // agent exactly which markdown block every item targets
-const NOTES_KEY = `webdeck:${slug(deck[0].title)}:notes`;
+const NOTES_KEY = `webdeck:${slug(deckTitle)}:notes`;
 let notes = [];
 try { notes = JSON.parse(localStorage.getItem(NOTES_KEY)) || []; } catch {}
 const saveNotes = () => localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
@@ -2293,35 +3536,109 @@ function flashBadge(msg) {
 }
 
 function exportNotes() {
-  const md = [`## Deck feedback — ${deck[0].title}`, ...notes.map((n) => `- [#${n.sec}] ${n.text}`)].join("\n");
+  const md = [`## Deck feedback — ${deckTitle}`, ...notes.map((n) => `- [#${n.sec}] ${n.text}`)].join("\n");
   navigator.clipboard.writeText(md).then(
     () => flashBadge(`${notes.length} comment${notes.length === 1 ? "" : "s"} copied as markdown`),
     () => flashBadge("clipboard unavailable"),
   );
 }
 
-// --- presenter window (N): speaker notes, next slide, elapsed timer --------
+// --- presenter window (N): thumbnails, notes, controls, elapsed timer ------
 // about:blank inherits our origin, so we drive its DOM directly — no
-// BroadcastChannel needed (which is unreliable on file://)
+// BroadcastChannel needed (which is unreliable on file://). The sidebar is
+// made of real slides: each live section is cloned and scaled down, so the
+// presenter sees the deck itself rather than a list of titles, and every
+// renderer gets thumbnails for free the day it is written.
 let pres = null;
 function openPresenter() {
   if (pres && !pres.closed) { pres.focus(); return; }
-  pres = open("", "deck-presenter", "width=880,height=620");
+  pres = open("", "deck-presenter", "width=1280,height=800");
   if (!pres) return; // popup blocked
   const v = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  pres.document.write(`<!doctype html><title>Presenter — ${deck[0].title}</title><style>
-    body { background: ${v("--bg")}; color: ${v("--text")}; font: 14px/1.6 ${v("--font-mono")}; padding: 2rem; display: grid; gap: 1.4rem; align-content: start; }
-    .clock { font-size: 2.4rem; color: ${v("--accent")}; }
-    .cur { font-size: 1.5rem; font-weight: 700; }
-    .notes p { color: ${v("--muted")}; margin: 0.5rem 0; max-width: 60ch; }
-    .next { color: ${v("--faint")}; }
-  </style><div class="clock">00:00</div><div class="cur"></div><div class="notes"></div><div class="next"></div>`);
+  // copy the deck's own stylesheet so the clones render as real slides; the
+  // presenter chrome is written after it, so it wins on body and layout
+  const deckCSS = [...document.querySelectorAll("style")].map((n) => n.textContent).join("\n");
+  // html.static: reveals shown, scrubs collapsed, snapping off — the clones
+  // are stills, so they must not sit in their pre-entrance state
+  pres.document.write(`<!doctype html><html class="static"><head><title>Presenter — ${deckTitle}</title>
+    <style>${deckCSS}</style>
+    <style>
+    :root { --ts: 0.145; }   /* thumbnail scale: the 1920px page × --ts */
+    html.static, body { height: 100vh; }
+    body { margin: 0; background: ${v("--surface")}; color: ${v("--text")}; overflow: hidden;
+      font: 14px/1.6 ${v("--font-mono")}, ui-monospace, monospace;
+      display: grid; grid-template-columns: calc(1920px * var(--ts) + 2.4rem) 1fr; }
+    .p-side { border-right: 1px solid ${v("--line")}; overflow-y: auto; padding: 0.7rem; display: grid; gap: 0.5rem; align-content: start; }
+    .p-nav-row { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 0.35rem; border-radius: 9px; cursor: pointer; }
+    .p-nav-row:hover { background: ${v("--surface-2")}; }
+    .p-nav-row.on { background: ${v("--accent")}; }
+    .p-thumb { width: calc(1920px * var(--ts)); height: calc(1080px * var(--ts));
+      overflow: hidden; border-radius: 5px; border: 1px solid ${v("--line")}; position: relative; background: ${v("--bg")}; }
+    /* the clone lays out at full page size with the print viewport-unit
+       values pinned, then scales down as one box — the same trick print
+       uses, for the same reason: raw vw/vh would resolve against this window */
+    .p-thumb-inner { position: absolute; top: 0; left: 0; width: 1920px; height: 1080px;
+      --vw: 19.2px; --vh: 10.8px; --vmax: 19.2px;
+      transform-origin: top left; transform: scale(var(--ts)); }
+    .p-row-meta { display: flex; gap: 0.5rem; margin-top: 0.35rem; font-size: 0.8rem; color: ${v("--muted")}; }
+    .p-nav-row.on .p-row-meta, .p-nav-row.on .p-n { color: ${v("--bg")}; }
+    .p-n { color: ${v("--faint")}; }
+    .p-t { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .p-main { padding: 2rem 2.4rem; display: grid; gap: 1.3rem; align-content: start; overflow-y: auto; }
+    .p-top { display: flex; align-items: center; gap: 1.4rem; }
+    .p-clock { font-size: 2.4rem; color: ${v("--accent")}; font-weight: 600; }
+    .p-ctrl { margin-left: auto; display: flex; gap: 0.6rem; }
+    .p-ctrl button { background: ${v("--surface-2")}; border: 1px solid ${v("--line")}; color: ${v("--text")};
+      font: inherit; padding: 0.5rem 1.1rem; border-radius: 8px; cursor: pointer; }
+    .p-ctrl button:hover { background: ${v("--accent")}; border-color: ${v("--accent")}; color: ${v("--bg")}; }
+    .p-eyebrow { font-size: 0.8rem; letter-spacing: 0.14em; text-transform: uppercase; color: ${v("--accent")}; }
+    .p-cur { font-size: 1.6rem; font-weight: 700; line-height: 1.3; }
+    .p-notes ul { margin: 0.5rem 0; padding-left: 1.2rem; }
+    .p-notes li { color: ${v("--muted")}; margin: 0.45rem 0; max-width: 62ch; font-size: 1.02rem; }
+    .p-notes li::marker { color: ${v("--accent")}; }
+    .p-next { color: ${v("--faint")}; border-top: 1px solid ${v("--line")}; padding-top: 1rem; }
+  </style></head><body>
+    <div class="p-side"></div>
+    <div class="p-main">
+      <div class="p-top">
+        <div class="p-clock">00:00</div>
+        <div class="p-ctrl"><button class="p-prev">&lsaquo; Prev</button><button class="p-next-btn">Next &rsaquo;</button></div>
+      </div>
+      <div class="p-eyebrow"></div>
+      <div class="p-cur"></div>
+      <div class="p-notes"></div>
+      <div class="p-next"></div>
+    </div>
+  </body></html>`);
   pres.document.close();
+  const pd = pres.document;
+  const side = pd.querySelector(".p-side");
+  sections.forEach((s, i) => {
+    const row = pd.createElement("button");
+    row.className = "p-nav-row";
+    const clone = pd.importNode(s.node, true);
+    clone.querySelectorAll(".big-num[data-target]").forEach((n) => (n.textContent = n.dataset.target));
+    row.innerHTML = `<div class="p-thumb"><div class="p-thumb-inner"></div></div>
+      <div class="p-row-meta"><span class="p-n">${String(i + 1).padStart(2, "0")}</span><span class="p-t">${inline(navLabel(s.data) || "—")}</span></div>`;
+    row.querySelector(".p-thumb-inner").appendChild(clone);
+    row.addEventListener("click", () => gotoSlide(i));
+    side.appendChild(row);
+  });
+  // the handlers live in THIS window, so they call the deck's own nav
+  // functions directly and the stage window is what scrolls
+  pd.querySelector(".p-prev").addEventListener("click", () => step(-1));
+  pd.querySelector(".p-next-btn").addEventListener("click", () => step(1));
+  pres.addEventListener("keydown", (e) => {
+    if ([" ", "ArrowDown", "PageDown"].includes(e.key)) { e.preventDefault(); step(1); }
+    else if (["ArrowUp", "PageUp"].includes(e.key)) { e.preventDefault(); step(-1); }
+    else if (e.key === "Home") { e.preventDefault(); gotoSlide(0); }
+    else if (e.key === "End") { e.preventDefault(); gotoSlide(sections.length - 1); }
+  });
   const t0 = Date.now();
   const tick = setInterval(() => {
     if (pres.closed) return clearInterval(tick);
     const s = Math.floor((Date.now() - t0) / 1000);
-    pres.document.querySelector(".clock").textContent =
+    pd.querySelector(".p-clock").textContent =
       `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
   }, 1000);
   updatePresenter();
@@ -2329,29 +3646,20 @@ function openPresenter() {
 function updatePresenter() {
   if (!pres || pres.closed) return;
   const d = pres.document, cur = sections[activeIdx].data, nxt = sections[activeIdx + 1];
-  d.querySelector(".cur").textContent = `${String(activeIdx + 1).padStart(2, "0")} · ${cur.title}`;
-  d.querySelector(".notes").innerHTML = cur.notes.length
-    ? cur.notes.map((n) => `<p>${inline(n)}</p>`).join("")
+  d.querySelector(".p-eyebrow").textContent = cur.cfg.eyebrow || "";
+  d.querySelector(".p-cur").textContent = `${String(activeIdx + 1).padStart(2, "0")} · ${cur.title || "—"}`;
+  d.querySelector(".p-notes").innerHTML = cur.notes.length
+    ? `<ul>${cur.notes.map((n) => `<li>${inline(n)}</li>`).join("")}</ul>`
     : "<p>— no notes —</p>";
-  d.querySelector(".next").textContent = nxt ? `next: ${nxt.data.title}` : "last slide";
+  d.querySelector(".p-next").textContent = nxt ? `next → ${nxt.data.title || navLabel(nxt.data) || "—"}` : "— last slide —";
+  d.querySelectorAll(".p-nav-row").forEach((r, i) => {
+    const on = i === activeIdx;
+    r.classList.toggle("on", on);
+    if (on) r.scrollIntoView({ block: "nearest" });
+  });
 }
 
 // --- scroll loop: spine fill, scrub progress, hash sync --------------------
-function setScrub(node, p) {
-  const s = node._scrub;
-  const idx = Math.max(0, Math.min(s.items.length - 1, Math.floor(p * s.items.length)));
-  if (idx === s.current) return;
-  s.current = idx;
-  node.querySelectorAll(".chip").forEach((c, i) => c.classList.toggle("on", i <= idx));
-  node.querySelector(".track .fill").style.width = `${((idx + 1) / s.items.length) * 100}%`;
-  const blurb = node.querySelector(".blurb");
-  blurb.querySelector(".head").textContent = s.items[idx].head;
-  blurb.querySelector(".text").textContent = s.items[idx].body.join(" ");
-  blurb.classList.remove("swap");
-  void blurb.offsetWidth; // restart entrance animation
-  blurb.classList.add("swap");
-}
-
 let currentHash = "";
 let activeIdx = 0;
 let ticking = false;
@@ -2368,7 +3676,7 @@ function onScroll() {
       if (y >= node.offsetTop - vh * 0.4) { active = sections[i]; activeIdx = i; }
       if (node._scrub) {
         const sp = Math.max(0, Math.min(1, (y - node.offsetTop) / (node.offsetHeight - vh)));
-        setScrub(node, sp);
+        node._scrub.set(sp);
       }
     });
     segs.forEach((sg, i) => sg.classList.toggle("active", sections[i] === active));
@@ -2384,6 +3692,7 @@ function onScroll() {
       currentHash = active.node.id;
       history.replaceState(null, "", `#${currentHash}`);
       updatePresenter();
+      shiftBackdrop(activeIdx);
     }
     if (inking) { drawInk(); inkBadge(); }
   });
@@ -2430,12 +3739,101 @@ function countUp(node) {
   })(t0);
 }
 
+// --- backdrop: one canvas behind the whole deck ----------------------------
+// Ambient, not decorative noise: it holds a state per slide and EASES to the
+// next one when the slide changes, so stepping through the deck feels like
+// moving through a space rather than swapping posters. Two rules make it
+// affordable: (1) nothing animates while a slide is at rest — the rAF loop
+// runs only during the ~1s transition, so an idle deck burns zero frames;
+// (2) anything expensive is pre-rendered once to an offscreen canvas and
+// blitted per frame. Swap the texture and the glow for your own; keep the
+// shape of the loop.
+const backdrop = document.getElementById("backdrop");
+const bctx = backdrop.getContext("2d");
+const DOT = 34;                       // texture pitch
+let bW = 0, bH = 0, texCanvas = null, glowCanvas = null, accent = "#ffffff";
+const bCur = { ox: 0, oy: 0, gx: 0.5, gy: 0.35 };   // texture offset + glow focus
+let bTgt = { ...bCur }, bRAF = 0;
+
+function sizeBackdrop() {
+  bW = innerWidth; bH = innerHeight;
+  backdrop.width = bW; backdrop.height = bH;   // 1× backing store: blurry by design
+  accent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#ffffff";
+  // texture tile: viewport + one cell of overscan on each side, so the
+  // per-slide offset drift can never expose an edge
+  texCanvas = texCanvas || document.createElement("canvas");
+  const tw = bW + 2 * DOT, th = bH + 2 * DOT;
+  texCanvas.width = tw; texCanvas.height = th;
+  const tc = texCanvas.getContext("2d");
+  tc.fillStyle = "rgba(255,255,255,0.05)";
+  for (let y = 0; y < th; y += DOT)
+    for (let x = 0; x < tw; x += DOT) { tc.beginPath(); tc.arc(x, y, 1.1, 0, 7); tc.fill(); }
+  // accent glow: pre-rendered small (a smooth gradient scales up invisibly),
+  // then moved with one cheap drawImage per frame
+  const GP = 512;
+  glowCanvas = glowCanvas || document.createElement("canvas");
+  glowCanvas.width = glowCanvas.height = GP;
+  const gc = glowCanvas.getContext("2d");
+  const g = gc.createRadialGradient(GP / 2, GP / 2, 0, GP / 2, GP / 2, GP / 2);
+  g.addColorStop(0, alpha(accent, 0.14));
+  g.addColorStop(0.6, alpha(accent, 0.04));
+  g.addColorStop(1, alpha(accent, 0));
+  gc.fillStyle = g;
+  gc.fillRect(0, 0, GP, GP);
+  drawBackdrop();
+}
+// #rrggbb → rgba()
+function alpha(hex, a) {
+  const n = parseInt(hex.replace("#", ""), 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+}
+function drawBackdrop() {
+  if (!bW) return;
+  bctx.clearRect(0, 0, bW, bH);
+  const R = Math.hypot(bW, bH) * 0.9;   // reach across the diagonal; its edge fades out
+  bctx.drawImage(glowCanvas, bCur.gx * bW - R, bCur.gy * bH - R, 2 * R, 2 * R);
+  bctx.drawImage(texCanvas, -DOT + bCur.ox, -DOT + bCur.oy);
+}
+function tweenBackdrop() {
+  let done = true;
+  for (const k of ["ox", "oy", "gx", "gy"]) {
+    bCur[k] += (bTgt[k] - bCur[k]) * 0.12;
+    if (Math.abs(bTgt[k] - bCur[k]) > 0.003) done = false;
+  }
+  drawBackdrop();
+  if (done) { Object.assign(bCur, bTgt); drawBackdrop(); bRAF = 0; }
+  else bRAF = requestAnimationFrame(tweenBackdrop);
+}
+// deterministic per-slide state — no Math.random, so a given slide always
+// looks the same. The glow walks the four corners; the texture drifts.
+const CORNERS = [[0, 0], [1, 0], [1, 1], [0, 1]];
+function shiftBackdrop(i) {
+  const [gx, gy] = CORNERS[((i % 4) + 4) % 4];
+  bTgt = {
+    ox: (Math.sin(i * 1.7) * 0.5 + 0.5) * DOT,
+    oy: (Math.cos(i * 1.1) * 0.5 + 0.5) * DOT,
+    gx, gy,
+  };
+  if (document.documentElement.classList.contains("static")) {
+    Object.assign(bCur, bTgt);   // reduced motion: jump, don't ease
+    drawBackdrop();
+    return;
+  }
+  if (!bRAF) bRAF = requestAnimationFrame(tweenBackdrop);
+}
+sizeBackdrop();
+addEventListener("resize", sizeBackdrop);
+
 // --- init -------------------------------------------------------------------
 buildWaypoints();
 onScroll();
+// honour an incoming deep link. "instant", not "auto": on a fresh load
+// scroll-behavior is still smooth, so "auto" animates all the way down from
+// the top — a long scroll that races the mandatory snap and can settle on the
+// wrong slide, which is precisely what a shared link must never do
 if (location.hash) {
   const target = document.getElementById(location.hash.slice(1));
-  if (target) scrollTo({ top: target.offsetTop, behavior: "auto" });
+  if (target) scrollTo({ top: target.offsetTop, behavior: "instant" });
 }
 </script>
 </body>
