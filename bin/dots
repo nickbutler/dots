@@ -10,9 +10,11 @@ end
 
 cd $dotfile_dir
 
-function ok
-  echo -s (set_color green) "Ok!" (set_color normal)
-end
+# Where the skills repo (github.com/nickbutler/skills) lives locally.
+set -q SKILLS_PATH; or set -g SKILLS_PATH ~/code/projects/skills
+
+source $dotfile_dir/lib/common.fish
+source $dotfile_dir/lib/skills.fish
 
 function program_description
   switch $argv[1]
@@ -53,25 +55,6 @@ function package_name
         case '*';            echo $program
       end
   end
-end
-
-function symlink_one
-  set -l source (realpath $argv[1])
-  set -l dest $argv[2]
-
-  if test -L $dest; and test (realpath $dest 2>/dev/null) = $source
-    ok
-    return
-  end
-
-  if test -e $dest; or test -L $dest
-    set -l backup_path $dest.(date +%s).dots_backup
-    echo -n -s (set_color yellow) "Backing up: $backup_path. "
-    mv $dest $backup_path
-  end
-
-  ln -sf $source $dest
-  ok
 end
 
 function symlink_configs
@@ -247,6 +230,7 @@ end
 symlink_configs
 symlink_bin
 symlink_agents
+symlink_skills $SKILLS_PATH
 symlink_others
 
 # Show anything still missing after potential install

@@ -35,6 +35,26 @@ Pulling re-runs the link steps automatically so any new configs or scripts are w
 
 ---
 
+## Agent skills
+
+`~/.agents/skills` is the shared store every agent draws from. Two things fill it:
+
+- **Mine** — [nickbutler/skills][5], cloned to `$SKILLS_PATH` (default `~/code/projects/skills`)
+  and symlinked in by `dots`. Edits land in git immediately; there is no reinstall step.
+- **Third-party** — `npx skills add <repo> --skill <name> -g`, which copies into the same store.
+
+Codex, Cursor, Gemini CLI and OpenCode read the store directly. Claude Code, pi and omp don't,
+so `dots` fans the store out into `~/.claude/skills`, `~/.pi/agent/skills` and
+`~/.omp/agent/skills`, skipping any agent that isn't installed. Links whose skill has been
+deleted are pruned; real directories — including the copies `npx skills` makes — are left alone.
+
+```sh
+SKILLS_PATH=~/src/skills dots        # point at a different checkout
+fish test/skills.fish                # test the linking
+```
+
+---
+
 ## Fish
 
 **Auto-start tmux** — interactive shells outside tmux attach to (or create) a `main` session automatically. SSH sessions skip this.
@@ -205,3 +225,4 @@ Pulling re-runs the link steps automatically so any new configs or scripts are w
 [2]: https://github.com/tmux/tmux
 [3]: https://neovim.io/
 [4]: https://ghostty.org
+[5]: https://github.com/nickbutler/skills
