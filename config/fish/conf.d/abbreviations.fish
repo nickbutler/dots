@@ -3,7 +3,7 @@ abbr ... cd ../..
 abbr .... cd ../../..
 abbr ..... cd ../../../..
 abbr ...... cd ../../../../..
-abbr ....... cd ../../../../..
+abbr ....... cd ../../../../../..
 abbr a tmux a
 abbr add git add
 abbr amend git commit --amend --no-edit --date=now
@@ -30,7 +30,7 @@ abbr h 'history | fzf'
 abbr la l -a
 abbr md open -a /Applications/MacDown.app/
 abbr mk mkdir -p
-abbr mkrepo gh repo create (basename $PWD) --private --source=. --remote=upstream --push
+abbr mkrepo 'gh repo create (basename $PWD) --private --source=. --remote=upstream --push'
 abbr p bpython
 abbr pg pgcli
 abbr po poetry
