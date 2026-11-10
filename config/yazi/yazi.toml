@@ -1,0 +1,16 @@
+[mgr]
+ratio = [0, 1, 2]
+
+[[mgr.prepend_keymap]]
+on   = "<C-e>"
+run  = "seek 1"
+desc = "Scroll preview down"
+
+[[mgr.prepend_keymap]]
+on   = "<C-y>"
+run  = "seek -1"
+desc = "Scroll preview up"
+
+[[plugin.prepend_previewers]]
+url = "*.md"
+run = 'piper -- CLICOLOR_FORCE=1 glow -w=$w -s=dark "$1"'
